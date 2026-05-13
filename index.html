@@ -34,7 +34,9 @@
 
     body {
       margin: 0;
-      min-height: 100vh;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
       background: var(--paper);
       color: var(--ink);
       font-family: "Aptos", "Segoe UI", "Malgun Gothic", sans-serif;
@@ -116,6 +118,8 @@
     }
 
     .canvas-wrap {
+      flex: 1;
+      min-height: 0;
       padding: 30px;
       overflow: auto;
     }
@@ -677,6 +681,10 @@
         canvas.appendChild(label);
       });
 
+      const firstX = xByYear.get(years[0]) || 230;
+      const heading = canvas.querySelector(".heading");
+      if (heading) heading.style.left = `${firstX - 65}px`;
+
       const nodeMap = new Map();
       years.forEach(year => {
         const items = lanes.get(year) || [];
@@ -697,7 +705,6 @@
 
       drawDeptBoxes([...nodeMap.values()]);
       [...nodeMap.values()].forEach(drawNode);
-      drawGroupLabels(context, years, lanes);
 
       state.edges = relations.map(row => {
         const sourceYear = row.year - 1;
@@ -1194,14 +1201,18 @@
     }
 
     function showTooltip(event, node) {
-      const parent = state.units.get(node.unit.parent);
-      tooltip.innerHTML = `
-        <strong>${escapeHtml(node.unit.name || node.code)}</strong><br>
-        학년도: ${escapeHtml(node.year)}<br>
-        코드: ${escapeHtml(node.code)}<br>
-        유형: ${escapeHtml(node.unit.type || "-")}<br>
-        부모: ${escapeHtml(parent ? `${parent.name} (${parent.code})` : node.unit.parent || "-")}
-      `;
+      const relatedEdge = state.edges.find(edge =>
+        edge.source === node.code &&
+        edge.sourceYear === node.year &&
+        edge.validUntil &&
+        ["closed", "splitted", "merged", "renewed"].includes(edge.type)
+      );
+      if (!relatedEdge) return;
+      const validUntil = relatedEdge.validUntil;
+      const message = validUntil === "9999"
+        ? "현 재적생이 졸업할 때까지 유지"
+        : `${escapeHtml(validUntil)}학년도 졸업자까지 유지`;
+      tooltip.innerHTML = `<strong>${escapeHtml(node.unit.name || node.code)}</strong><br>${message}`;
       tooltip.style.display = "block";
       moveTooltip(event);
     }
