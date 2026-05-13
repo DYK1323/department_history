@@ -120,14 +120,14 @@
     .canvas-wrap {
       flex: 1;
       min-height: 0;
-      padding: 30px;
+      padding: 20px 32px;
       overflow: auto;
     }
 
     .canvas {
       position: relative;
       width: max-content;
-      min-width: 1600px;
+      min-width: 800px;
       height: 920px;
       margin: 0 auto;
       background: #fffefb;
@@ -655,7 +655,19 @@
       for (let year = minYear - 1; year <= maxYear; year++) years.push(year);
       const context = buildLayoutContext(relations, years, allSnapshots);
       const lanes = context.lanes;
-      const width = Math.max(1700, 300 + years.length * 260);
+
+      const wrapPad = 32;
+      const canvasWidth = Math.max(800, document.documentElement.clientWidth - 2 * wrapPad);
+      const canvasPad = 48;
+      const nodeHalf = 89;
+      const firstColX = canvasPad + nodeHalf;
+      const colStep = years.length > 1
+        ? Math.max(200, Math.floor((canvasWidth - 2 * canvasPad - 2 * nodeHalf) / (years.length - 1)))
+        : 200;
+      const width = years.length > 1
+        ? Math.max(canvasWidth, firstColX + (years.length - 1) * colStep + nodeHalf + canvasPad)
+        : canvasWidth;
+
       const maxY = Math.max(...[...context.yByNode.values()], 760);
       const height = Math.max(920, maxY + 110);
 
@@ -672,7 +684,7 @@
 
       const xByYear = new Map();
       years.forEach((year, index) => {
-        const x = 230 + index * 260;
+        const x = firstColX + index * colStep;
         xByYear.set(year, x);
         const label = document.createElement("div");
         label.className = "year-label";
@@ -681,9 +693,8 @@
         canvas.appendChild(label);
       });
 
-      const firstX = xByYear.get(years[0]) || 230;
       const heading = canvas.querySelector(".heading");
-      if (heading) heading.style.left = `${firstX - 65}px`;
+      if (heading) heading.style.left = `${canvasPad}px`;
 
       const nodeMap = new Map();
       years.forEach(year => {
