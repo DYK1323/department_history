@@ -1,0 +1,1290 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>편제 변경 플로우</title>
+  <style>
+    :root {
+      --ink: #06111f;
+      --ink-soft: #142235;
+      --paper: #fbfbf8;
+      --panel: #ffffff;
+      --line: #0b1624;
+      --muted: #64748b;
+      --grid: #e5e7eb;
+      --accent: #1aa7d9;
+      --node-bg: #f8fafc;
+      --node-border: #94a3b8;
+      --node-text: #0f172a;
+      --node-subtle: #475569;
+      --college-bg: #e0f2fe;
+      --college-border: #0284c7;
+      --major-bg: #fff7ed;
+      --major-border: #f97316;
+      --created: #0f9f6e;
+      --revised: #2f6fe4;
+      --renewed: #7952d6;
+      --closed: #d64545;
+      --merged: #e57a19;
+      --splitted: #0097b2;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Aptos", "Segoe UI", "Malgun Gothic", sans-serif;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      gap: 12px;
+      padding: 14px 18px;
+      background: rgba(251, 251, 248, 0.94);
+      border-bottom: 1px solid var(--grid);
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      margin: 0 18px 0 0;
+      font-size: 19px;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    input,
+    select,
+    button {
+      min-height: 34px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      font-size: 13px;
+      padding: 6px 8px;
+    }
+
+    button {
+      border-color: var(--ink);
+      background: var(--ink);
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      border-color: #94a3b8;
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .legend i {
+      display: inline-block;
+      width: 16px;
+      height: 3px;
+      margin-right: 5px;
+      vertical-align: middle;
+      background: var(--ink);
+    }
+
+    .canvas-wrap {
+      padding: 30px;
+      overflow: auto;
+    }
+
+    .canvas {
+      position: relative;
+      width: max-content;
+      min-width: 1600px;
+      height: 920px;
+      margin: 0 auto;
+      background: #fffefb;
+      border: 1px solid #ece7dc;
+      box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+    }
+
+    .heading {
+      position: absolute;
+      left: 44px;
+      top: 34px;
+      z-index: 3;
+    }
+
+    .heading h2 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .heading p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .node {
+      position: absolute;
+      z-index: 3;
+      display: grid;
+      place-items: center;
+      width: 178px;
+      min-height: 70px;
+      padding: 9px 10px;
+      border: 2px solid var(--node-border);
+      border-radius: 10px;
+      background: var(--node-bg);
+      color: var(--node-text);
+      text-align: center;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+      cursor: default;
+    }
+
+    .node.college {
+      width: 178px;
+      min-height: 70px;
+      border-color: var(--college-border);
+      background: var(--college-bg);
+      color: #0c4a6e;
+    }
+
+    .node.major {
+      width: 178px;
+      min-height: 64px;
+      border-color: var(--major-border);
+      border-radius: 10px;
+      background: var(--major-bg);
+    }
+
+    .node.focus {
+      outline: 4px solid rgba(26, 167, 217, 0.38);
+      outline-offset: 3px;
+    }
+
+    .node.dimmed {
+      opacity: 0.22;
+    }
+
+    .node-title {
+      display: block;
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.28;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
+    .node-code {
+      display: none;
+      margin-top: 6px;
+      color: rgba(255, 255, 255, 0.66);
+      font-size: 10px;
+      line-height: 1.2;
+    }
+
+    .node-path {
+      display: block;
+      margin-top: 6px;
+      color: var(--node-subtle);
+      font-size: 10px;
+      line-height: 1.28;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
+    .dept-box {
+      position: absolute;
+      z-index: 1;
+      width: 214px;
+      border: 2px solid #64748b;
+      border-radius: 14px;
+      background: rgba(226, 232, 240, 0.78);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .dept-box.focus {
+      border-color: var(--accent);
+      background: rgba(224, 242, 254, 0.9);
+      box-shadow: 0 0 0 4px rgba(26, 167, 217, 0.16);
+    }
+
+    .dept-box.dimmed {
+      opacity: 0.16;
+    }
+
+    .dept-box-title {
+      position: absolute;
+      left: 12px;
+      top: -13px;
+      max-width: 188px;
+      padding: 3px 8px;
+      border-radius: 5px;
+      background: #334155;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .group-label {
+      position: absolute;
+      z-index: 2;
+      left: 44px;
+      width: 145px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      text-align: right;
+      border-top: 2px solid #dbe1ea;
+      padding-top: 8px;
+    }
+
+    .year-label {
+      position: absolute;
+      z-index: 2;
+      top: 126px;
+      width: 130px;
+      margin-left: -65px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .flow-line {
+      fill: none;
+      stroke: var(--line);
+      stroke-width: 2.2;
+      marker-end: url(#arrow);
+    }
+
+    .flow-line.created { stroke: var(--created); }
+    .flow-line.revised { stroke: var(--revised); }
+    .flow-line.renewed { stroke: var(--renewed); }
+    .flow-line.closed { stroke: var(--closed); }
+    .flow-line.merged { stroke: var(--merged); }
+    .flow-line.splitted { stroke: var(--splitted); }
+    .flow-line.unchanged {
+      stroke: #b8c0cc;
+      stroke-width: 1.4;
+      opacity: 0.42;
+    }
+    .flow-line.dimmed { opacity: 0.12; }
+    .flow-line.focus { stroke-width: 3.4; opacity: 1; }
+
+    .edge-label {
+      fill: var(--ink);
+      font-size: 12px;
+      font-weight: 900;
+      paint-order: stroke;
+      stroke: #fffefb;
+      stroke-width: 7px;
+      stroke-linejoin: round;
+    }
+
+    .edge-label.created { fill: var(--created); }
+    .edge-label.revised { fill: var(--revised); }
+    .edge-label.renewed { fill: var(--renewed); }
+    .edge-label.closed { fill: var(--closed); }
+    .edge-label.merged { fill: var(--merged); }
+    .edge-label.splitted { fill: var(--splitted); }
+    .edge-label.unchanged { display: none; }
+    .edge-label.dimmed { opacity: 0.12; }
+
+    .empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      text-align: center;
+      font-size: 15px;
+      z-index: 4;
+    }
+
+    .tooltip {
+      position: fixed;
+      z-index: 50;
+      display: none;
+      max-width: 360px;
+      padding: 10px 12px;
+      border: 1px solid #dbe1ea;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 16px 35px rgba(15, 23, 42, 0.16);
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.45;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <h1>Org Flow</h1>
+    <label>dim_org_unit.csv
+      <input id="dimFile" type="file" accept=".csv,text/csv">
+    </label>
+    <label>org_unit_relation.csv
+      <input id="relationFile" type="file" accept=".csv,text/csv">
+    </label>
+    <button id="loadBtn" disabled>그리기</button>
+    <label>시작 학년도
+      <select id="startYear"></select>
+    </label>
+    <label>종료 학년도
+      <select id="endYear"></select>
+    </label>
+    <label>변경유형
+      <select id="typeFilter"><option value="">전체</option></select>
+    </label>
+    <label>검색
+      <input id="searchBox" type="search" placeholder="조직명/코드">
+    </label>
+    <div class="legend">
+      <span><i style="background:var(--renewed)"></i>renewed</span>
+      <span><i style="background:var(--revised)"></i>revised</span>
+      <span><i style="background:var(--splitted)"></i>splitted</span>
+      <span><i style="background:var(--merged)"></i>merged</span>
+      <span><i style="background:var(--created)"></i>created</span>
+      <span><i style="background:var(--closed)"></i>closed</span>
+    </div>
+  </div>
+
+  <div class="canvas-wrap">
+    <section class="canvas" id="canvas">
+      <div class="heading">
+        <h2>편제 변경 플로우</h2>
+        <p id="subtitle">CSV를 선택하면 변경 이력이 연도별 흐름도로 표시됩니다.</p>
+      </div>
+      <svg id="svg">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"></path>
+          </marker>
+        </defs>
+      </svg>
+      <div class="empty" id="empty">dim_org_unit.csv와 org_unit_relation.csv를 선택해주세요.</div>
+    </section>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    const state = {
+      units: new Map(),
+      relations: [],
+      nodes: [],
+      edges: [],
+      selectedNodeKey: "",
+      loadedFromLocalFiles: false
+    };
+    const DEFAULT_FILES = {
+      dim: "dim_org_unit.csv",
+      relation: "org_unit_relation.csv"
+    };
+
+    const dimFile = document.getElementById("dimFile");
+    const relationFile = document.getElementById("relationFile");
+    const loadBtn = document.getElementById("loadBtn");
+    const startYear = document.getElementById("startYear");
+    const endYear = document.getElementById("endYear");
+    const typeFilter = document.getElementById("typeFilter");
+    const searchBox = document.getElementById("searchBox");
+    const canvas = document.getElementById("canvas");
+    const svg = document.getElementById("svg");
+    const empty = document.getElementById("empty");
+    const subtitle = document.getElementById("subtitle");
+    const tooltip = document.getElementById("tooltip");
+
+    dimFile.addEventListener("change", updateLoad);
+    relationFile.addEventListener("change", updateLoad);
+    loadBtn.addEventListener("click", loadData);
+    startYear.addEventListener("change", render);
+    endYear.addEventListener("change", render);
+    typeFilter.addEventListener("change", render);
+    searchBox.addEventListener("input", applySearch);
+    canvas.addEventListener("click", event => {
+      if (!event.target.closest(".node")) {
+        state.selectedNodeKey = "";
+        applySearch();
+      }
+    });
+    window.addEventListener("load", bootstrapData);
+
+    function updateLoad() {
+      loadBtn.disabled = !state.loadedFromLocalFiles &&
+        !(dimFile.files.length && relationFile.files.length);
+    }
+
+    async function bootstrapData() {
+      try {
+        await loadData();
+      } catch (_error) {
+        state.loadedFromLocalFiles = false;
+        updateLoad();
+        subtitle.textContent = "같은 폴더의 CSV 자동 읽기에 실패했습니다. 아래 파일 선택으로 직접 불러올 수 있습니다.";
+        empty.textContent = "자동 읽기에 실패했습니다. dim_org_unit.csv와 org_unit_relation.csv를 직접 선택해주세요.";
+      }
+    }
+
+    async function loadData() {
+      try {
+        const { unitText, relationText, sourceLabel } = await loadCsvSources();
+        ingestData(unitText, relationText);
+        subtitle.textContent = sourceLabel;
+        empty.textContent = "조건에 맞는 변경 이력이 없습니다.";
+        state.loadedFromLocalFiles = sourceLabel.includes(DEFAULT_FILES.dim);
+        updateLoad();
+      } catch (error) {
+        state.loadedFromLocalFiles = false;
+        updateLoad();
+        throw error;
+      }
+    }
+
+    async function loadCsvSources() {
+      try {
+        const [unitText, relationText] = await Promise.all([
+          fetchCsvText(DEFAULT_FILES.dim),
+          fetchCsvText(DEFAULT_FILES.relation)
+        ]);
+        return {
+          unitText,
+          relationText,
+          sourceLabel: `같은 폴더의 ${DEFAULT_FILES.dim}, ${DEFAULT_FILES.relation}를 자동으로 불러왔습니다.`
+        };
+      } catch (_error) {
+        if (!(dimFile.files.length && relationFile.files.length)) {
+          throw new Error("Local CSV auto load failed.");
+        }
+      }
+
+      const [unitText, relationText] = await Promise.all([
+        readFile(dimFile.files[0]),
+        readFile(relationFile.files[0])
+      ]);
+      return {
+        unitText,
+        relationText,
+        sourceLabel: "선택한 CSV 파일로 변경 이력을 불러왔습니다."
+      };
+    }
+
+    async function fetchCsvText(path) {
+      const response = await fetch(path, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${path}: ${response.status}`);
+      }
+      return response.text();
+    }
+
+    function ingestData(unitText, relationText) {
+
+      state.units.clear();
+      parseCsv(unitText).forEach(row => {
+        const code = clean(row.unit_code);
+        if (!code) return;
+        state.units.set(code, {
+          code,
+          name: clean(row.unit_name),
+          type: clean(row.unit_type),
+          parent: clean(row.parent_code),
+          temp: clean(row.is_temp_code)
+        });
+      });
+
+      state.relations = parseCsv(relationText)
+        .map(row => ({
+          id: clean(row.relation_id),
+          year: Number(clean(row.change_year)),
+          type: clean(row.change_type),
+          validUntil: clean(row.valid_until),
+          source: firstCode(row.prev_major_code, row.prev_dept_code, row.prev_college_code),
+          target: firstCode(row.after_major_code, row.after_dept_code, row.after_college_code),
+          prevPath: [row.prev_college_code, row.prev_dept_code, row.prev_major_code].map(clean).filter(Boolean),
+          afterPath: [row.after_college_code, row.after_dept_code, row.after_major_code].map(clean).filter(Boolean)
+        }))
+        .filter(row => row.year && (row.source || row.target));
+
+      state.componentByCode = null;
+
+      const years = unique(state.relations.map(row => row.year)).sort((a, b) => a - b);
+      fillSelect(startYear, years);
+      fillSelect(endYear, years);
+      startYear.value = years[0] || "";
+      endYear.value = years[years.length - 1] || "";
+      fillSelect(typeFilter, unique(state.relations.map(row => row.type)).sort(), true);
+      render();
+    }
+
+    function readFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = reject;
+        reader.readAsText(file, "utf-8");
+      });
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let value = "";
+      let inQuotes = false;
+      const src = text.replace(/^\uFEFF/, "");
+
+      for (let i = 0; i < src.length; i++) {
+        const ch = src[i];
+        const next = src[i + 1];
+        if (ch === '"' && inQuotes && next === '"') {
+          value += '"';
+          i++;
+        } else if (ch === '"') {
+          inQuotes = !inQuotes;
+        } else if (ch === "," && !inQuotes) {
+          row.push(value);
+          value = "";
+        } else if ((ch === "\n" || ch === "\r") && !inQuotes) {
+          if (ch === "\r" && next === "\n") i++;
+          row.push(value);
+          if (row.some(cell => cell.length)) rows.push(row);
+          row = [];
+          value = "";
+        } else {
+          value += ch;
+        }
+      }
+
+      row.push(value);
+      if (row.some(cell => cell.length)) rows.push(row);
+      if (!rows.length) return [];
+
+      const headers = rows.shift().map(clean);
+      return rows.map(values => {
+        const item = {};
+        headers.forEach((header, index) => item[header] = values[index] ?? "");
+        return item;
+      });
+    }
+
+    function clean(value) {
+      const v = String(value ?? "").trim();
+      return v === "nan" || v === "NaN" || v === "<NA>" ? "" : v;
+    }
+
+    function firstCode(...values) {
+      return values.map(clean).find(Boolean) || "";
+    }
+
+    function unique(values) {
+      return [...new Set(values.filter(v => v !== "" && v !== null && v !== undefined))];
+    }
+
+    function fillSelect(select, values, includeAll = false) {
+      select.innerHTML = includeAll ? '<option value="">전체</option>' : "";
+      values.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+    }
+
+    function render() {
+      if (!state.relations.length) return;
+
+      const from = Number(startYear.value);
+      const to = Number(endYear.value);
+      const selectedType = typeFilter.value;
+      const minYear = Math.min(from, to);
+      const maxYear = Math.max(from, to);
+
+      const relations = state.relations
+        .filter(row => row.year >= minYear && row.year <= maxYear)
+        .filter(row => !selectedType || row.type === selectedType)
+        .filter(row => row.source && row.target);
+
+      const allSnapshots = buildSnapshots();
+      const years = [];
+      for (let year = minYear - 1; year <= maxYear; year++) years.push(year);
+      const context = buildLayoutContext(relations, years, allSnapshots);
+      const lanes = context.lanes;
+      const width = Math.max(1700, 300 + years.length * 260);
+      const maxY = Math.max(...[...context.yByNode.values()], 760);
+      const height = Math.max(920, maxY + 110);
+
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      svg.setAttribute("width", width);
+      svg.setAttribute("height", height);
+
+      canvas.querySelectorAll(".node,.year-label,.group-label,.dept-box").forEach(el => el.remove());
+      clearSvg();
+
+      subtitle.textContent = `${minYear}~${maxYear}학년도 변경 ${relations.length.toLocaleString()}건`;
+
+      const xByYear = new Map();
+      years.forEach((year, index) => {
+        const x = 230 + index * 260;
+        xByYear.set(year, x);
+        const label = document.createElement("div");
+        label.className = "year-label";
+        label.style.left = `${x}px`;
+        label.textContent = `${year}학년도`;
+        canvas.appendChild(label);
+      });
+
+      const nodeMap = new Map();
+      years.forEach(year => {
+        const items = lanes.get(year) || [];
+        items.forEach((code, laneIndex) => {
+          const unit = state.units.get(code) || { code, name: code, type: "department", parent: "" };
+          const node = {
+            code,
+            year,
+            unit,
+            path: context.pathByNode.get(nodeKey(year, code)) || pathFromUnit(code),
+            group: context.groupByNode.get(nodeKey(year, code)) || topCollegeCode(code),
+            x: xByYear.get(year),
+            y: context.yByNode.get(nodeKey(year, code)) || 180 + laneIndex * 104
+          };
+          nodeMap.set(nodeKey(year, code), node);
+        });
+      });
+
+      drawDeptBoxes([...nodeMap.values()]);
+      [...nodeMap.values()].forEach(drawNode);
+      drawGroupLabels(context, years, lanes);
+
+      state.edges = relations.map(row => {
+        const sourceYear = row.year - 1;
+        const targetYear = row.year;
+        return {
+          ...row,
+          sourceYear,
+          targetYear,
+          sourceNode: nodeMap.get(nodeKey(sourceYear, row.source)),
+          targetNode: nodeMap.get(nodeKey(targetYear, row.target))
+        };
+      }).filter(edge => edge.sourceNode && edge.targetNode);
+
+      state.edges.push(...buildCarryEdges(years, nodeMap, relations));
+      drawEdges();
+      empty.style.display = state.edges.length ? "none" : "grid";
+      state.nodes = [...nodeMap.values()];
+      applySearch();
+    }
+
+    function buildSnapshots() {
+      const changeYears = unique(state.relations.map(row => row.year)).sort((a, b) => a - b);
+      if (!changeYears.length) return new Map();
+
+      const firstChangeYear = changeYears[0];
+      const snapshots = new Map();
+      const base = new Map();
+
+      state.relations
+        .filter(row => row.year === firstChangeYear)
+        .forEach(row => {
+          if (row.source) base.set(row.source, row.prevPath.length ? row.prevPath : pathFromUnit(row.source));
+        });
+
+      snapshots.set(firstChangeYear - 1, base);
+
+      let previous = new Map(base);
+      changeYears.forEach(year => {
+        const next = new Map(previous);
+        state.relations
+          .filter(row => row.year === year)
+          .forEach(row => {
+            if (row.source) next.delete(row.source);
+            if (row.target) next.set(row.target, row.afterPath.length ? row.afterPath : pathFromUnit(row.target));
+          });
+        snapshots.set(year, next);
+        previous = next;
+      });
+
+      return snapshots;
+    }
+
+    function buildLayoutContext(relations, years, snapshots) {
+      const pathByNode = new Map();
+      const groupByNode = new Map();
+
+      years.forEach(year => {
+        const snapshot = snapshots.get(year) || new Map();
+        snapshot.forEach((path, code) => {
+          const key = nodeKey(year, code);
+          const resolvedPath = path.length ? path : pathFromUnit(code);
+          pathByNode.set(key, resolvedPath);
+          groupByNode.set(key, currentGroupForPath(resolvedPath, code));
+        });
+      });
+
+      relations.forEach(row => {
+        const sourceKey = nodeKey(row.year - 1, row.source);
+        const targetKey = nodeKey(row.year, row.target);
+        const sourcePath = row.prevPath.length ? row.prevPath : pathByNode.get(sourceKey) || pathFromUnit(row.source);
+        const targetPath = row.afterPath.length ? row.afterPath : pathByNode.get(targetKey) || pathFromUnit(row.target);
+        pathByNode.set(sourceKey, sourcePath);
+        pathByNode.set(targetKey, targetPath);
+        groupByNode.set(sourceKey, currentGroupForPath(sourcePath, row.source));
+        groupByNode.set(targetKey, currentGroupForPath(targetPath, row.target));
+      });
+
+      const lanes = new Map(years.map(year => [year, []]));
+      const seen = new Map(years.map(year => [year, new Set()]));
+
+      years.forEach(year => {
+        const snapshot = snapshots.get(year) || new Map();
+        snapshot.forEach((_path, code) => addLane(lanes, seen, year, code));
+      });
+
+      years.forEach(year => {
+        const items = lanes.get(year);
+        items.sort((a, b) => {
+          const ka = sortKeyForNode(year, a, pathByNode, groupByNode);
+          const kb = sortKeyForNode(year, b, pathByNode, groupByNode);
+          return ka.localeCompare(kb);
+        });
+      });
+
+      const yByNode = buildYPositions(lanes, pathByNode, groupByNode, years);
+      return { lanes, pathByNode, groupByNode, yByNode };
+    }
+
+    function addLane(lanes, seen, year, code) {
+      if (!lanes.has(year) || !code || seen.get(year).has(code)) return;
+      seen.get(year).add(code);
+      lanes.get(year).push(code);
+    }
+
+    function buildCarryEdges(years, nodeMap, changeRelations) {
+      const changedByYear = new Map();
+      changeRelations.forEach(row => {
+        const key = `${row.year}::${row.source}::${row.target}`;
+        changedByYear.set(key, true);
+      });
+
+      const carryEdges = [];
+      for (let i = 1; i < years.length; i++) {
+        const prevYear = years[i - 1];
+        const year = years[i];
+        const prevCodes = [...nodeMap.keys()]
+          .filter(key => key.startsWith(`${prevYear}::`))
+          .map(key => key.split("::")[1]);
+
+        prevCodes.forEach(code => {
+          const sourceNode = nodeMap.get(nodeKey(prevYear, code));
+          const targetNode = nodeMap.get(nodeKey(year, code));
+          if (!sourceNode || !targetNode) return;
+          if (changedByYear.has(`${year}::${code}::${code}`)) return;
+          carryEdges.push({
+            id: `carry-${prevYear}-${year}-${code}`,
+            year,
+            type: "unchanged",
+            source: code,
+            target: code,
+            sourceYear: prevYear,
+            targetYear: year,
+            sourceNode,
+            targetNode
+          });
+        });
+      }
+      return carryEdges;
+    }
+
+    function buildYPositions(lanes, pathByNode, groupByNode, years) {
+      const yByNode = new Map();
+      const top = 180;
+      const nodeStep = 84;
+      const boxPadding = 44;
+      const minGroupGap = 22;
+      const groupsByYear = new Map();
+      const totalHeightByYear = new Map();
+
+      years.forEach(year => {
+        const groups = groupLaneItems(lanes.get(year) || [], year, pathByNode, groupByNode);
+        groupsByYear.set(year, groups);
+        const groupHeights = groups.map(group => groupHeight(group, nodeStep, boxPadding));
+        const totalHeight = groupHeights.reduce((sum, height) => sum + height, 0) +
+          Math.max(0, groups.length - 1) * minGroupGap;
+        totalHeightByYear.set(year, totalHeight);
+      });
+
+      const maxHeight = Math.max(...totalHeightByYear.values(), 760);
+
+      lanes.forEach((items, year) => {
+        const groups = groupsByYear.get(year) || [];
+        if (!groups.length) return;
+
+        const groupHeights = groups.map(group => groupHeight(group, nodeStep, boxPadding));
+        const usedHeight = groupHeights.reduce((sum, height) => sum + height, 0);
+        const gap = groups.length > 1
+          ? Math.max(minGroupGap, (maxHeight - usedHeight) / (groups.length - 1))
+          : 0;
+        let boxTop = top + (groups.length === 1 ? (maxHeight - usedHeight) / 2 : 0);
+
+        groups.forEach((group, groupIndex) => {
+          group.codes.forEach((code, index) => {
+            yByNode.set(nodeKey(year, code), boxTop + boxPadding + index * nodeStep);
+          });
+          boxTop += groupHeights[groupIndex] + gap;
+        });
+      });
+      return yByNode;
+    }
+
+    function groupHeight(group, nodeStep, boxPadding) {
+      return Math.max(88, Math.max(0, group.codes.length - 1) * nodeStep + boxPadding * 2);
+    }
+
+    function groupLaneItems(items, year, pathByNode, groupByNode) {
+      const groups = [];
+      let current = null;
+
+      items.forEach(code => {
+        const key = nodeKey(year, code);
+        const path = pathByNode.get(key) || pathFromUnit(code);
+        const college = groupByNode.get(key) || currentGroupForPath(path, code);
+        const dept = deptCodeFromPath(path) || code;
+        const deptGroup = `${college}::${dept}`;
+
+        if (!current || current.deptGroup !== deptGroup) {
+          current = { college, dept, deptGroup, codes: [], pathByCode: new Map() };
+          groups.push(current);
+        }
+
+        current.codes.push(code);
+        current.pathByCode.set(code, path);
+      });
+
+      return groups;
+    }
+
+    function groupAnchorY(group, referenceByDeptGroup, referenceByCode, componentY) {
+      if (referenceByDeptGroup.has(group.deptGroup)) return referenceByDeptGroup.get(group.deptGroup);
+      const candidates = group.codes
+        .map(code => referenceByCode.get(code) || componentY.get(componentIdOf(code)))
+        .filter(value => Number.isFinite(value));
+      if (!candidates.length) return 180;
+      return Math.min(...candidates);
+    }
+
+    function buildComponentY(referenceByCode) {
+      const buckets = new Map();
+      referenceByCode.forEach((y, code) => {
+        const componentId = componentIdOf(code);
+        if (!buckets.has(componentId)) buckets.set(componentId, []);
+        buckets.get(componentId).push(y);
+      });
+
+      const result = new Map();
+      buckets.forEach((ys, componentId) => {
+        const avg = ys.reduce((sum, y) => sum + y, 0) / ys.length;
+        result.set(componentId, avg);
+      });
+      return result;
+    }
+
+    function componentIdOf(code) {
+      if (!state.componentByCode) buildComponents();
+      return state.componentByCode.get(code) || code;
+    }
+
+    function buildComponents() {
+      const parent = new Map();
+      const find = code => {
+        if (!parent.has(code)) parent.set(code, code);
+        const p = parent.get(code);
+        if (p === code) return code;
+        const root = find(p);
+        parent.set(code, root);
+        return root;
+      };
+      const union = (a, b) => {
+        if (!a || !b) return;
+        const ra = find(a);
+        const rb = find(b);
+        if (ra !== rb) parent.set(rb, ra);
+      };
+
+      state.relations.forEach(row => union(row.source, row.target));
+      state.componentByCode = new Map();
+      parent.forEach((_value, code) => state.componentByCode.set(code, find(code)));
+    }
+
+    /*
+    function groupRank(code) {
+      const name = labelOf(code);
+      const rank = [
+        "유럽미주대학",
+        "아시아대학",
+        "사회과학대학",
+        "상경대학",
+        "디지털미디어·IT대학",
+        "IT대학",
+        "International College"
+      ];
+      const found = rank.findIndex(item => name.includes(item));
+      return found >= 0 ? found : 100;
+    }
+    */
+
+    function sortKeyForNode(year, code, pathByNode, groupByNode) {
+      const path = pathByNode.get(nodeKey(year, code)) || pathFromUnit(code);
+      const college = groupByNode.get(nodeKey(year, code)) || currentGroupForPath(path, code) || "";
+      const dept = deptCodeFromPath(path) || code;
+      const major = majorCodeFromPath(path);
+      const unit = state.units.get(code);
+      const level = unit?.type === "college" ? "0" : unit?.type === "department" ? "1" : "2";
+      return [college, dept, level, major || code].join("|");
+    }
+
+    function drawNode(node) {
+      const div = document.createElement("div");
+      const type = node.unit.type || "department";
+      div.className = `node ${type}`;
+      div.style.left = `${node.x - 89}px`;
+      div.style.top = `${node.y - 35}px`;
+      div.dataset.nodeKey = nodeKey(node.year, node.code);
+      div.dataset.code = node.code;
+      div.dataset.search = `${node.year} ${node.code} ${node.unit.name} ${node.unit.type} ${pathLabel(node.path)}`.toLowerCase();
+      div.innerHTML = `
+        <div class="node-inner">
+          <span class="node-title">${escapeHtml(displayNameForNode(node))}</span>
+          <span class="node-path">${escapeHtml(parentPathLabel(node.path))}</span>
+        </div>
+      `;
+      div.addEventListener("mouseenter", event => showTooltip(event, node));
+      div.addEventListener("mousemove", moveTooltip);
+      div.addEventListener("mouseleave", hideTooltip);
+      div.addEventListener("click", event => {
+        event.stopPropagation();
+        const key = nodeKey(node.year, node.code);
+        state.selectedNodeKey = state.selectedNodeKey === key ? "" : key;
+        applySearch();
+      });
+      canvas.appendChild(div);
+    }
+
+    function drawDeptBoxes(nodes) {
+      const groups = new Map();
+      nodes.forEach(node => {
+        const deptCode = deptCodeFromPath(node.path);
+        if (!deptCode) return;
+        const hasMajor = Boolean(majorCodeFromPath(node.path));
+        const collegeCode = currentGroupForPath(node.path, node.code);
+        const key = `${node.year}::${collegeCode}::${deptCode}`;
+        if (!groups.has(key)) {
+          groups.set(key, {
+            year: node.year,
+            deptCode,
+            x: node.x,
+            minY: node.y,
+            maxY: node.y,
+            count: 0,
+            hasMajor: false,
+            nodeKeys: []
+          });
+        }
+        const group = groups.get(key);
+        group.minY = Math.min(group.minY, node.y);
+        group.maxY = Math.max(group.maxY, node.y);
+        group.count += 1;
+        group.hasMajor = group.hasMajor || hasMajor;
+        group.nodeKeys.push(nodeKey(node.year, node.code));
+      });
+
+      groups.forEach(group => {
+        if (!group.hasMajor && group.count < 2) return;
+        const box = document.createElement("div");
+        box.className = "dept-box";
+        box.style.left = `${group.x - 107}px`;
+        box.style.top = `${group.minY - 44}px`;
+        box.style.height = `${Math.max(88, group.maxY - group.minY + 88)}px`;
+        box.dataset.nodeKeys = group.nodeKeys.join(" ");
+        box.dataset.search = `${group.deptCode} ${labelOf(group.deptCode)}`.toLowerCase();
+        box.innerHTML = `<div class="dept-box-title">${escapeHtml(labelOf(group.deptCode))}</div>`;
+        canvas.appendChild(box);
+      });
+    }
+
+    function drawGroupLabels(context, years, lanes) {
+      const firstYear = years[0];
+      const items = lanes.get(firstYear) || [];
+      let lastGroup = "";
+      items.forEach((code, laneIndex) => {
+        const key = nodeKey(firstYear, code);
+        const group = context.groupByNode.get(key) || topCollegeCode(code);
+        if (!group || group === lastGroup) return;
+        lastGroup = group;
+        const label = document.createElement("div");
+        label.className = "group-label";
+        label.style.top = `${(context.yByNode.get(key) || 180) - 38}px`;
+        label.textContent = labelOf(group);
+        canvas.appendChild(label);
+      });
+    }
+
+    function drawEdges() {
+      state.edges.forEach(edge => {
+        const sx = edge.sourceNode.x + 90;
+        const sy = edge.sourceNode.y;
+        const tx = edge.targetNode.x - 90;
+        const ty = edge.targetNode.y;
+        const mid = (sx + tx) / 2;
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("class", `flow-line ${edge.type}`);
+        path.dataset.edgeId = edge.id;
+        path.dataset.sourceKey = nodeKey(edge.sourceYear, edge.source);
+        path.dataset.targetKey = nodeKey(edge.targetYear, edge.target);
+        path.dataset.search = `${edge.year} ${edge.type} ${edge.source} ${edge.target} ${labelOf(edge.source)} ${labelOf(edge.target)}`.toLowerCase();
+        path.setAttribute("d", `M ${sx} ${sy} C ${mid} ${sy}, ${mid} ${ty}, ${tx} ${ty}`);
+        svg.appendChild(path);
+
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("class", `edge-label ${edge.type}`);
+        label.setAttribute("x", mid);
+        label.setAttribute("y", (sy + ty) / 2 - 8);
+        label.setAttribute("text-anchor", "middle");
+        label.dataset.edgeId = edge.id;
+        label.dataset.search = path.dataset.search;
+        label.textContent = edge.type;
+        svg.appendChild(label);
+      });
+    }
+
+    function clearSvg() {
+      svg.querySelectorAll(".flow-line,.edge-label").forEach(el => el.remove());
+    }
+
+    function applySearch() {
+      const term = searchBox.value.trim().toLowerCase();
+      const nodes = canvas.querySelectorAll(".node");
+      const boxes = canvas.querySelectorAll(".dept-box");
+      const edges = svg.querySelectorAll(".flow-line,.edge-label");
+      const selected = state.selectedNodeKey;
+      const connected = selected ? connectedNodeKeys(selected) : new Set();
+
+      nodes.forEach(node => {
+        node.classList.remove("focus", "dimmed");
+      });
+      boxes.forEach(box => {
+        box.classList.remove("focus", "dimmed");
+      });
+      edges.forEach(edge => {
+        edge.classList.remove("focus", "dimmed");
+      });
+
+      if (selected) {
+        nodes.forEach(node => {
+          const hit = connected.has(node.dataset.nodeKey);
+          node.classList.toggle("focus", hit);
+          node.classList.toggle("dimmed", !hit);
+        });
+
+        boxes.forEach(box => {
+          const keys = box.dataset.nodeKeys.split(" ").filter(Boolean);
+          const hit = keys.some(key => connected.has(key));
+          box.classList.toggle("focus", hit);
+          box.classList.toggle("dimmed", !hit);
+        });
+
+        edges.forEach(edge => {
+          const hit = connected.has(edge.dataset.sourceKey) && connected.has(edge.dataset.targetKey);
+          edge.classList.toggle("focus", hit);
+          edge.classList.toggle("dimmed", !hit);
+        });
+      }
+
+      if (!term) return;
+
+      const matchedKeys = new Set();
+      nodes.forEach(node => {
+        const hit = node.dataset.search.includes(term);
+        if (hit) matchedKeys.add(node.dataset.nodeKey);
+      });
+
+      nodes.forEach(node => {
+        const hit = matchedKeys.has(node.dataset.nodeKey);
+        node.classList.toggle("focus", hit);
+        node.classList.toggle("dimmed", !hit);
+      });
+
+      boxes.forEach(box => {
+        const keys = box.dataset.nodeKeys.split(" ").filter(Boolean);
+        const hit = box.dataset.search.includes(term) || keys.some(key => matchedKeys.has(key));
+        box.classList.toggle("focus", hit || box.classList.contains("focus"));
+        box.classList.toggle("dimmed", !hit);
+      });
+
+      edges.forEach(edge => {
+        const hit = edge.dataset.search.includes(term) ||
+          matchedKeys.has(edge.dataset.sourceKey) ||
+          matchedKeys.has(edge.dataset.targetKey);
+        edge.classList.toggle("focus", hit || edge.classList.contains("focus"));
+        edge.classList.toggle("dimmed", !hit);
+      });
+    }
+
+    function connectedNodeKeys(startKey) {
+      const connected = new Set([startKey]);
+      const queue = [startKey];
+
+      while (queue.length) {
+        const key = queue.shift();
+        state.edges.forEach(edge => {
+          const sourceKey = nodeKey(edge.sourceYear, edge.source);
+          const targetKey = nodeKey(edge.targetYear, edge.target);
+          if (sourceKey !== key && targetKey !== key) return;
+          const other = sourceKey === key ? targetKey : sourceKey;
+          if (!connected.has(other)) {
+            connected.add(other);
+            queue.push(other);
+          }
+        });
+      }
+
+      return connected;
+    }
+
+    function showTooltip(event, node) {
+      const parent = state.units.get(node.unit.parent);
+      tooltip.innerHTML = `
+        <strong>${escapeHtml(node.unit.name || node.code)}</strong><br>
+        학년도: ${escapeHtml(node.year)}<br>
+        코드: ${escapeHtml(node.code)}<br>
+        유형: ${escapeHtml(node.unit.type || "-")}<br>
+        부모: ${escapeHtml(parent ? `${parent.name} (${parent.code})` : node.unit.parent || "-")}
+      `;
+      tooltip.style.display = "block";
+      moveTooltip(event);
+    }
+
+    function moveTooltip(event) {
+      tooltip.style.left = `${event.clientX + 14}px`;
+      tooltip.style.top = `${event.clientY + 14}px`;
+    }
+
+    function hideTooltip() {
+      tooltip.style.display = "none";
+    }
+
+    function nodeKey(year, code) {
+      return `${year}::${code}`;
+    }
+
+    function labelOf(code) {
+      return state.units.get(code)?.name || code || "";
+    }
+
+    function pathFromUnit(code) {
+      const path = [];
+      const seen = new Set();
+      let current = code;
+      while (current && !seen.has(current)) {
+        seen.add(current);
+        path.unshift(current);
+        current = state.units.get(current)?.parent || "";
+      }
+      return path;
+    }
+
+    function deptCodeFromPath(path) {
+      return (path || []).find(code => state.units.get(code)?.type === "department") || "";
+    }
+
+    function majorCodeFromPath(path) {
+      return (path || []).find(code => state.units.get(code)?.type === "major") || "";
+    }
+
+    function topCollegeCode(code) {
+      const path = pathFromUnit(code);
+      return path.find(item => state.units.get(item)?.type === "college") || path[0] || "";
+    }
+
+    function currentGroupForPath(path, code) {
+      return (path || []).find(item => state.units.get(item)?.type === "college") || topCollegeCode(code) || (path || [])[0] || "";
+    }
+
+    function pathLabel(path) {
+      return (path || [])
+        .map(code => labelOf(code))
+        .filter(Boolean)
+        .join(" > ");
+    }
+
+    function parentPathLabel(path) {
+      const items = (path || []).slice(0, 2).map(code => labelOf(code)).filter(Boolean);
+      return items.join(" > ");
+    }
+
+    function displayNameForNode(node) {
+      if (node.unit.type === "major") return shortLabel(node.unit.name || node.code);
+      if (majorCodeFromPath(node.path)) return shortLabel(labelOf(majorCodeFromPath(node.path)));
+      if (node.unit.type === "department") return shortLabel(node.unit.name || node.code);
+      return shortLabel(node.unit.name || node.code);
+    }
+
+    function shortLabel(value) {
+      const text = String(value || "");
+      return text.length > 18 ? `${text.slice(0, 17)}…` : text;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, ch => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[ch]));
+    }
+  </script>
+</body>
+</html>
