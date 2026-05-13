@@ -1091,7 +1091,9 @@
         path.dataset.sourceKey = nodeKey(edge.sourceYear, edge.source);
         path.dataset.targetKey = nodeKey(edge.targetYear, edge.target);
         path.dataset.search = `${edge.year} ${edge.type} ${edge.source} ${edge.target} ${labelOf(edge.source)} ${labelOf(edge.target)}`.toLowerCase();
-        path.setAttribute("d", `M ${sx} ${sy} C ${mid} ${sy}, ${mid} ${ty}, ${tx} ${ty}`);
+        const cp2x = tx - Math.min(70, (tx - sx) * 0.28);
+        const cp2y = ty - (ty - sy) * 0.28;
+        path.setAttribute("d", `M ${sx} ${sy} C ${mid} ${sy}, ${cp2x} ${cp2y}, ${tx} ${ty}`);
         svg.appendChild(path);
 
         const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
