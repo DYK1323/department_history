@@ -387,12 +387,12 @@
       <input id="searchBox" type="search" placeholder="조직명/코드">
     </label>
     <div class="legend">
-      <span><i style="background:var(--renewed)"></i>renewed</span>
-      <span><i style="background:var(--revised)"></i>revised</span>
-      <span><i style="background:var(--splitted)"></i>splitted</span>
-      <span><i style="background:var(--merged)"></i>merged</span>
-      <span><i style="background:var(--created)"></i>created</span>
-      <span><i style="background:var(--closed)"></i>closed</span>
+      <span><i style="background:var(--renewed)"></i>개편</span>
+      <span><i style="background:var(--revised)"></i>명칭변경</span>
+      <span><i style="background:var(--splitted)"></i>분리</span>
+      <span><i style="background:var(--merged)"></i>통합</span>
+      <span><i style="background:var(--created)"></i>신설</span>
+      <span><i style="background:var(--closed)"></i>폐지</span>
     </div>
   </div>
 
@@ -427,6 +427,14 @@
     const DEFAULT_FILES = {
       dim: "dim_org_unit.csv",
       relation: "org_unit_relation.csv"
+    };
+    const CHANGE_TYPE_LABELS = {
+      renewed: "개편",
+      revised: "명칭변경",
+      splitted: "분리",
+      merged: "통합",
+      created: "신설",
+      closed: "폐지"
     };
 
     const dimFile = document.getElementById("dimFile");
@@ -559,7 +567,7 @@
       fillSelect(endYear, years);
       startYear.value = years[0] || "";
       endYear.value = years[years.length - 1] || "";
-      fillSelect(typeFilter, unique(state.relations.map(row => row.type)).sort(), true);
+      fillSelect(typeFilter, unique(state.relations.map(row => row.type)).sort(), true, CHANGE_TYPE_LABELS);
       render();
     }
 
@@ -626,12 +634,12 @@
       return [...new Set(values.filter(v => v !== "" && v !== null && v !== undefined))];
     }
 
-    function fillSelect(select, values, includeAll = false) {
+    function fillSelect(select, values, includeAll = false, labelMap = null) {
       select.innerHTML = includeAll ? '<option value="">전체</option>' : "";
       values.forEach(value => {
         const option = document.createElement("option");
         option.value = value;
-        option.textContent = value;
+        option.textContent = labelMap?.[value] ?? value;
         select.appendChild(option);
       });
     }
@@ -1114,7 +1122,7 @@
         label.setAttribute("text-anchor", "middle");
         label.dataset.edgeId = edge.id;
         label.dataset.search = path.dataset.search;
-        label.textContent = edge.type;
+        label.textContent = CHANGE_TYPE_LABELS[edge.type] ?? edge.type;
         svg.appendChild(label);
       });
     }
