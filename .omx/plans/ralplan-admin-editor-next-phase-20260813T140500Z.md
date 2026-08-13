@@ -61,19 +61,22 @@ Use the next milestone to turn `admin.html` into a real edit-capable surface fir
 - The next implementation pass should concentrate on relation lifecycle, not broad feature spread.
 - Frontend state will grow, but in a way that directly supports later after-new-unit drafts.
 - Verification must cover create mode regression and edit mode correctness side by side.
+- Edit mode must not silently lose loaded endpoints when `changeYear` changes.
+- New path-parameter relation APIs must stay inside the same admin-auth boundary as existing admin routes.
+- The active relation draft must be the single source of truth; filtered bootstrap lists are search aids only.
 
 ## Architect Review
 
 Verdict: APPROVE WITH TENSIONS
 
 Strongest antithesis:
-Building edit mode first may delay an immediately visible feature the user already asked about: 신규 코드 입력. If staff cannot register a new `변경 후` unit, some real workflows still stall.
+Building edit mode first may delay an immediately visible feature the user already asked about: 신규 코드 입력. If staff cannot register a new `변경 후` unit, some real workflows still stall. Also, a naive create/edit merge can become unsafe if loaded endpoints disappear when the operator changes `changeYear`.
 
 Tradeoff tension:
 Edit mode improves the system architecture and long-term maintainability, while new-unit creation improves short-term task coverage. The chosen order optimizes for a cleaner state model rather than immediate breadth.
 
 Synthesis:
-Keep the edit milestone intentionally narrow. Do not over-design a generic form engine. Add only the state, API, and UI hooks necessary to reload one saved relation, edit it, and save it back. Once that loop is proven, extend the same `selectedAfterExisting + draftAfterNewUnits` model.
+Keep the edit milestone intentionally narrow. Do not over-design a generic form engine. Add only the state, API, and UI hooks necessary to reload one saved relation, edit it, and save it back. Model the active relation as one canonical draft object, use bootstrap only for year-filtered search candidates, and keep `PATCH /api/relations/:id` as an atomic endpoint-replacement operation protected by the same admin-auth boundary as existing admin routes. Once that loop is proven, extend the same `selectedAfterExisting + draftAfterNewUnits` model.
 
 ## Critic Review
 
@@ -85,12 +88,16 @@ Why approved:
 - Alternatives were considered fairly and one was explicitly deferred rather than hand-waved away.
 - Acceptance and verification can be written concretely.
 - The execution order reduces risk by establishing edit-state correctness before adding mixed existing/new unit state.
+- The remaining sequencing tension is explicit and intentionally bounded: `변경 후 신규 코드 생성` stays out of the immediate milestone until relation reload, canonical draft state, and PATCH behavior are proven.
 
 Required verification emphasis:
 
 - Prove that switching into edit mode round-trips an existing relation without silent mutation.
-- Prove that create mode still works unchanged after edit-state introduction.
-- Keep delete out of scope for this milestone.
+- Confirm `changeYear` changes during edit mode do not silently drop loaded endpoints.
+- Verify PATCH is atomic so relation fields and endpoint rows commit or roll back together.
+- Re-run create mode regression after edit-state introduction.
+- Confirm unauthenticated `GET /api/relations/:id` and `PATCH /api/relations/:id` are blocked.
+- Keep delete and inline new-unit creation out of the immediate edit milestone.
 
 ## Execution Plan
 
@@ -99,6 +106,7 @@ Required verification emphasis:
 - Add `수정` action to recent-entry cards.
 - Introduce `mode: create | edit` and `editingRelationId`.
 - Show a visible edit-state indicator and swap actions to `수정 저장` / `수정 취소`.
+- Separate the editable relation draft from year-filtered selectable candidate lists.
 
 ### Phase 2: Relation Detail / Patch API
 
@@ -106,12 +114,14 @@ Required verification emphasis:
 - Add `PATCH /api/relations/:id`.
 - Implement endpoint replacement strategy on patch.
 - Reuse existing validation rules from create flow.
+- Extend the admin auth guard so path-parameter relation routes are protected too.
+- Make PATCH atomic so relation fields and endpoint rows succeed or fail together.
 
 ### Phase 3: Form Rehydration
 
 - Load a chosen relation into the current form state.
 - Rehydrate `changeYear`, `changeType`, `retainUntilGradYear`, `selectedPrev`, and `selectedAfter`.
-- Preserve current year-based filtering and ensure the edited relation remains selectable.
+- Use bootstrap year filtering only for search candidates and ensure the edited relation remains loaded without silently pruning endpoints.
 
 ### Phase 4: Post-Edit Stabilization
 
@@ -127,6 +137,9 @@ Required verification emphasis:
 - Saving in edit mode updates the same relation instead of creating a duplicate.
 - Create mode still works after edit features are introduced.
 - Existing auth, year filtering, and recent-entry summary UI remain intact.
+- Changing `changeYear` during edit mode never drops loaded endpoints without an explicit user action.
+- `GET /api/relations/:id` and `PATCH /api/relations/:id` are not accessible without admin authentication.
+- Edit mode can load a relation whose endpoints are outside the current filtered candidate list and still preserve those endpoints.
 
 ## Verification Path
 
@@ -140,7 +153,11 @@ Required verification emphasis:
   - enter edit mode from recent entries
   - cancel edit mode
   - save edited relation
+  - change `changeYear` during edit mode and confirm selections are preserved or explicitly handled
   - create a new relation afterward
+- Failure-path smoke:
+  - provoke PATCH failure and confirm relation + endpoints stay unchanged together
+  - verify unauthenticated `GET/PATCH /api/relations/:id` returns auth failure
 
 ## Available Agent Types
 

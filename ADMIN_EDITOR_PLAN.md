@@ -166,15 +166,24 @@
 state = {
   mode: "create" | "edit",
   editingRelationId: null,
-  selectedPrev: [],
-  selectedAfterExisting: [],
-  draftAfterNewUnits: [],
-  oneToOneType: "renewed",
-  retainUntilGradYear: null
+  draftRelation: {
+    changeYear: null,
+    changeType: "renewed",
+    retainUntilGradYear: null,
+    selectedPrev: [],
+    selectedAfterExisting: [],
+    draftAfterNewUnits: []
+  }
 }
 ```
 
-핵심은 `변경 후`를 기존 선택과 신규 입력으로 분리하는 것이다.
+핵심은 **편집 중인 relation 초안**을 검색 후보 목록과 분리하는 것이다.
+
+- `draftRelation`은 현재 편집 대상의 단일 소스다.
+- bootstrap으로 받은 연도별 활성 편제 목록은 검색 후보를 제한하는 용도로만 사용한다.
+- 이미 불러온 relation endpoint는 검색 후보에 없더라도 draft 안에서는 유지되어야 한다.
+
+그 위에서 `변경 후`를 기존 선택과 신규 입력으로 분리한다.
 
 - `selectedAfterExisting`: 기존 코드 선택
 - `draftAfterNewUnits`: 아직 생성되지 않은 신규 코드 입력 초안
@@ -185,6 +194,7 @@ UI 표현 원칙:
 
 - 사용자는 `selectedAfterExisting`과 `draftAfterNewUnits`를 별개의 단계로 느끼지 않아야 한다.
 - 두 집합은 화면상 하나의 `변경 후 선택 목록`으로 보이게 한다.
+- `changeYear`를 바꾸더라도 이미 로드된 edit draft endpoint가 조용히 사라지면 안 된다.
 
 ## API 계획
 
@@ -213,6 +223,7 @@ UI 표현 원칙:
 용도:
 
 - 최근 입력에서 특정 관계를 클릭했을 때 정확한 편집 데이터를 가져온다.
+- edit mode 진입 전에 relation 전체를 재수화(rehydrate)하는 단일 진입점으로 사용한다.
 
 ### 3. relation 수정
 
@@ -232,6 +243,14 @@ UI 표현 원칙:
 
 - endpoint는 수정 시 전체 replace 방식이 단순하다.
 - 즉, relation은 유지하고 해당 relation의 endpoint rows를 지우고 다시 insert한다.
+- 이 작업은 하나의 트랜잭션 안에서 처리되어 relation/endpoint가 따로 깨지지 않게 한다.
+
+보안:
+
+- `GET /api/relations/:id`
+- `PATCH /api/relations/:id`
+
+두 경로 모두 현재 `admin.html`, `/api/admin/bootstrap`, `/api/relations`와 동일한 Basic 인증 보호 범위에 포함해야 한다.
 
 ### 4. 신규 unit 동시 생성
 
@@ -354,12 +373,15 @@ UI 표현 원칙:
 - 최근 입력 카드에 `수정` 액션 추가
 - `mode=create/edit` 상태 도입
 - 수정 대상 relation id를 상태에 보관
+- edit draft와 검색 후보 상태를 분리
 
 ### 3단계
 
 - `GET /api/relations/:id` 구현
 - 클릭한 relation 데이터를 폼에 다시 주입
 - `PATCH /api/relations/:id` 구현
+- relation + endpoint replace를 트랜잭션으로 묶기
+- `/api/relations/:id` 인증 보호 추가
 
 ### 4단계
 
@@ -377,11 +399,14 @@ UI 표현 원칙:
 
 - 기존 신규 입력이 계속 동작하는지
 - 수정 모드 진입 시 기존 relation이 정확히 재현되는지
+- 수정 모드에서 현재 연도를 바꾸더라도 이미 로드된 endpoint가 조용히 사라지지 않는지
 - 수정 저장 후 endpoint 중복이나 orphan row가 생기지 않는지
+- PATCH 실패 시 relation과 endpoint가 함께 rollback되는지
 - 신규 after code 생성 후 `curriculum_unit`과 relation이 함께 반영되는지
 - 동일 코드 중복 생성이 막히는지
 - CSV export 결과가 SQLite와 일치하는지
 - 부칙 연결을 추가했을 때 relation과 근거 텍스트가 분리 저장되는지
+- 인증 없이 `GET/PATCH /api/relations/:id` 접근이 막히는지
 
 ## 보류 항목
 
