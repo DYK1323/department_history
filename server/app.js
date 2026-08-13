@@ -166,9 +166,10 @@ function normalizeAfterNewUnitList(values) {
 
     return {
       unitName: cleanText(value.unitName),
-      unitType: cleanText(value.unitType),
       collegeCode: cleanText(value.collegeCode),
+      collegeName: cleanText(value.collegeName),
       departmentCode: cleanText(value.departmentCode),
+      departmentName: cleanText(value.departmentName),
       unitCode: cleanText(value.unitCode),
     };
   });
@@ -378,12 +379,12 @@ function normalizeRelationPayload(payload) {
 }
 
 function validateAfterNewUnits(drafts, unitsByCode, usedCodes) {
+  const createdColleges = new Map();
+  const createdDepartments = new Map();
+
   return drafts.map((draft, index) => {
     if (!draft.unitName) {
       throw new Error(`afterNewUnits[${index}].unitName is required`);
-    }
-    if (!['department', 'major'].includes(draft.unitType)) {
-      throw new Error(`afterNewUnits[${index}].unitType must be department or major`);
     }
     if (!draft.collegeCode) {
       throw new Error(`afterNewUnits[${index}].collegeCode is required`);
@@ -396,25 +397,58 @@ function validateAfterNewUnits(drafts, unitsByCode, usedCodes) {
     }
 
     const college = unitsByCode.get(draft.collegeCode);
-    if (!college || college.unit_type !== 'college') {
-      throw new Error(`afterNewUnits[${index}].collegeCode is invalid: ${draft.collegeCode}`);
+    if (college) {
+      if (college.unit_type !== 'college') {
+        throw new Error(`afterNewUnits[${index}].collegeCode is invalid: ${draft.collegeCode}`);
+      }
+    } else {
+      if (!draft.collegeName) {
+        throw new Error(`afterNewUnits[${index}].collegeName is required for new college`);
+      }
+      const existingCollegeDraft = createdColleges.get(draft.collegeCode);
+      if (existingCollegeDraft && existingCollegeDraft.unitName !== draft.collegeName) {
+        throw new Error(`afterNewUnits[${index}].collegeCode has conflicting names: ${draft.collegeCode}`);
+      }
+      createdColleges.set(draft.collegeCode, {
+        unitCode: draft.collegeCode,
+        unitName: draft.collegeName,
+        unitType: 'college',
+        parentUnitCode: '',
+      });
     }
 
     const departmentCode = draft.departmentCode || '';
-    if (draft.unitType === 'department' && departmentCode) {
-      throw new Error(`afterNewUnits[${index}].departmentCode must be empty for department`);
-    }
-
     let parentUnitCode = draft.collegeCode;
     if (departmentCode) {
       const department = unitsByCode.get(departmentCode);
-      if (!department || department.unit_type !== 'department') {
-        throw new Error(`afterNewUnits[${index}].departmentCode is invalid: ${departmentCode}`);
-      }
-
-      const departmentPath = buildPathCodes(departmentCode, unitsByCode);
-      if (!departmentPath.includes(draft.collegeCode)) {
-        throw new Error(`afterNewUnits[${index}].departmentCode does not belong to ${draft.collegeCode}`);
+      if (department) {
+        if (department.unit_type !== 'department') {
+          throw new Error(`afterNewUnits[${index}].departmentCode is invalid: ${departmentCode}`);
+        }
+        const departmentPath = buildPathCodes(departmentCode, unitsByCode);
+        if (!departmentPath.includes(draft.collegeCode)) {
+          throw new Error(`afterNewUnits[${index}].departmentCode does not belong to ${draft.collegeCode}`);
+        }
+      } else {
+        if (!draft.departmentName) {
+          throw new Error(`afterNewUnits[${index}].departmentName is required for new department`);
+        }
+        const existingDepartmentDraft = createdDepartments.get(departmentCode);
+        if (
+          existingDepartmentDraft &&
+          (
+            existingDepartmentDraft.unitName !== draft.departmentName ||
+            existingDepartmentDraft.parentUnitCode !== draft.collegeCode
+          )
+        ) {
+          throw new Error(`afterNewUnits[${index}].departmentCode has conflicting definitions: ${departmentCode}`);
+        }
+        createdDepartments.set(departmentCode, {
+          unitCode: departmentCode,
+          unitName: draft.departmentName,
+          unitType: 'department',
+          parentUnitCode: draft.collegeCode,
+        });
       }
       parentUnitCode = departmentCode;
     }
@@ -422,9 +456,11 @@ function validateAfterNewUnits(drafts, unitsByCode, usedCodes) {
     usedCodes.add(draft.unitCode);
     return {
       unitName: draft.unitName,
-      unitType: draft.unitType,
+      unitType: departmentCode ? 'major' : 'department',
       collegeCode: draft.collegeCode,
+      collegeName: draft.collegeName || '',
       departmentCode,
+      departmentName: draft.departmentName || '',
       unitCode: draft.unitCode,
       parentUnitCode,
     };
@@ -487,7 +523,36 @@ function validateRelationPayload(payload, unitsByCode = null) {
 
 function buildExpandedUnitsByCode(unitsByCode, drafts) {
   const expanded = new Map(unitsByCode);
+  const createdColleges = new Map();
+  const createdDepartments = new Map();
+
   drafts.forEach(draft => {
+    if (!expanded.has(draft.collegeCode) && !createdColleges.has(draft.collegeCode)) {
+      const collegeName = draft.collegeName || draft.collegeCode;
+      const collegeUnit = {
+        unit_code: draft.collegeCode,
+        unit_name: collegeName,
+        unit_type: 'college',
+        parent_unit_code: '',
+        is_temp_code: 0,
+      };
+      expanded.set(draft.collegeCode, collegeUnit);
+      createdColleges.set(draft.collegeCode, collegeUnit);
+    }
+
+    if (draft.departmentCode && !expanded.has(draft.departmentCode) && !createdDepartments.has(draft.departmentCode)) {
+      const departmentName = draft.departmentName || draft.departmentCode;
+      const departmentUnit = {
+        unit_code: draft.departmentCode,
+        unit_name: departmentName,
+        unit_type: 'department',
+        parent_unit_code: draft.collegeCode,
+        is_temp_code: 0,
+      };
+      expanded.set(draft.departmentCode, departmentUnit);
+      createdDepartments.set(draft.departmentCode, departmentUnit);
+    }
+
     expanded.set(draft.unitCode, {
       unit_code: draft.unitCode,
       unit_name: draft.unitName,
@@ -496,7 +561,11 @@ function buildExpandedUnitsByCode(unitsByCode, drafts) {
       is_temp_code: 0,
     });
   });
-  return expanded;
+  return {
+    unitsByCode: expanded,
+    createdColleges: [...createdColleges.values()],
+    createdDepartments: [...createdDepartments.values()],
+  };
 }
 
 async function loadBootstrapData() {
@@ -655,9 +724,9 @@ async function insertRelation(payload) {
 
   const { unitsByCode } = await loadUnits();
   const relation = validateRelationPayload(payload, unitsByCode);
-  const expandedUnitsByCode = buildExpandedUnitsByCode(unitsByCode, relation.afterNewUnits);
-  const prevEndpoints = relation.prevUnitCodes.map(code => deriveEndpoint(code, expandedUnitsByCode));
-  const afterEndpoints = relation.afterUnitCodes.map(code => deriveEndpoint(code, expandedUnitsByCode));
+  const expanded = buildExpandedUnitsByCode(unitsByCode, relation.afterNewUnits);
+  const prevEndpoints = relation.prevUnitCodes.map(code => deriveEndpoint(code, expanded.unitsByCode));
+  const afterEndpoints = relation.afterUnitCodes.map(code => deriveEndpoint(code, expanded.unitsByCode));
 
   const ids = await sqliteQueryJson(`
     SELECT
@@ -669,6 +738,40 @@ async function insertRelation(payload) {
   let endpointId = currentIds.max_endpoint_id + 1;
 
   const statements = ['PRAGMA foreign_keys = ON;', 'BEGIN IMMEDIATE;'];
+  expanded.createdColleges.forEach(unit => {
+    statements.push(`
+      INSERT INTO curriculum_unit (
+        unit_code,
+        unit_name,
+        unit_type,
+        parent_unit_code,
+        is_temp_code
+      ) VALUES (
+        ${sqlValue(unit.unit_code)},
+        ${sqlValue(unit.unit_name)},
+        'college',
+        NULL,
+        0
+      );
+    `);
+  });
+  expanded.createdDepartments.forEach(unit => {
+    statements.push(`
+      INSERT INTO curriculum_unit (
+        unit_code,
+        unit_name,
+        unit_type,
+        parent_unit_code,
+        is_temp_code
+      ) VALUES (
+        ${sqlValue(unit.unit_code)},
+        ${sqlValue(unit.unit_name)},
+        'department',
+        ${sqlValue(unit.parent_unit_code)},
+        0
+      );
+    `);
+  });
   relation.afterNewUnits.forEach(unit => {
     statements.push(`
       INSERT INTO curriculum_unit (
@@ -839,9 +942,9 @@ async function updateRelation(relationId, payload) {
 
   const { unitsByCode } = await loadUnits();
   const relation = validateRelationPayload(payload, unitsByCode);
-  const expandedUnitsByCode = buildExpandedUnitsByCode(unitsByCode, relation.afterNewUnits);
-  const prevEndpoints = relation.prevUnitCodes.map(code => deriveEndpoint(code, expandedUnitsByCode));
-  const afterEndpoints = relation.afterUnitCodes.map(code => deriveEndpoint(code, expandedUnitsByCode));
+  const expanded = buildExpandedUnitsByCode(unitsByCode, relation.afterNewUnits);
+  const prevEndpoints = relation.prevUnitCodes.map(code => deriveEndpoint(code, expanded.unitsByCode));
+  const afterEndpoints = relation.afterUnitCodes.map(code => deriveEndpoint(code, expanded.unitsByCode));
 
   const ids = await sqliteQueryJson(`
     SELECT (SELECT COALESCE(MAX(endpoint_id), 0) FROM change_relation_endpoint) AS max_endpoint_id;
@@ -849,6 +952,40 @@ async function updateRelation(relationId, payload) {
   let endpointId = Number((ids[0] || {}).max_endpoint_id || 0) + 1;
 
   const statements = ['PRAGMA foreign_keys = ON;', 'BEGIN IMMEDIATE;'];
+  expanded.createdColleges.forEach(unit => {
+    statements.push(`
+      INSERT INTO curriculum_unit (
+        unit_code,
+        unit_name,
+        unit_type,
+        parent_unit_code,
+        is_temp_code
+      ) VALUES (
+        ${sqlValue(unit.unit_code)},
+        ${sqlValue(unit.unit_name)},
+        'college',
+        NULL,
+        0
+      );
+    `);
+  });
+  expanded.createdDepartments.forEach(unit => {
+    statements.push(`
+      INSERT INTO curriculum_unit (
+        unit_code,
+        unit_name,
+        unit_type,
+        parent_unit_code,
+        is_temp_code
+      ) VALUES (
+        ${sqlValue(unit.unit_code)},
+        ${sqlValue(unit.unit_name)},
+        'department',
+        ${sqlValue(unit.parent_unit_code)},
+        0
+      );
+    `);
+  });
   relation.afterNewUnits.forEach(unit => {
     statements.push(`
       INSERT INTO curriculum_unit (
