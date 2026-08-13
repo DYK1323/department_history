@@ -32,6 +32,8 @@
       --closed: #d64545;
       --merged: #dd5b00;
       --splitted: #2a9d99;
+      --page-max-width: 1680px;
+      --page-gutter: 18px;
     }
 
     * { box-sizing: border-box; }
@@ -61,6 +63,8 @@
       grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
       align-items: center;
       gap: 12px;
+      width: min(calc(100% - 2 * var(--page-gutter)), var(--page-max-width));
+      margin: 0 auto;
       padding: 14px 18px;
     }
 
@@ -167,19 +171,25 @@
       background: var(--canvas);
     }
 
+    .main-shell {
+      width: min(calc(100% - 2 * var(--page-gutter)), var(--page-max-width));
+      margin: 0 auto;
+    }
+
     .flow-content {
       width: max-content;
-      min-width: 800px;
-      margin: 0;
+      min-width: min(800px, 100%);
+      margin: 0 auto;
     }
 
     .year-header {
       position: sticky;
       top: 0;
-      z-index: 20;
       left: 0;
+      z-index: 20;
       height: 44px;
-      width: 100vw;
+      width: 100%;
+      min-width: 100%;
       margin-bottom: 0;
       background: rgba(255, 255, 255, 0.88);
       border-bottom: 1px solid var(--hairline);
@@ -187,19 +197,27 @@
       backdrop-filter: blur(10px);
     }
 
+    .year-shell {
+      position: relative;
+      width: min(calc(100% - 2 * var(--page-gutter)), var(--page-max-width));
+      height: 100%;
+      margin: 0 auto;
+      overflow: visible;
+    }
+
     .year-track {
       position: relative;
       height: 100%;
       width: max-content;
-      min-width: 800px;
+      min-width: min(800px, 100%);
     }
 
     .canvas {
       position: relative;
       width: max-content;
-      min-width: 800px;
+      min-width: min(800px, 100%);
       height: 920px;
-      margin: 0;
+      margin: 0 auto;
       background: var(--canvas);
       border: 0;
       box-shadow: none;
@@ -221,7 +239,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 178px;
+      width: var(--node-width, 178px);
+      min-width: 132px;
       height: 42px;
       padding: 0 12px;
       border: 1px solid var(--node-border);
@@ -234,7 +253,7 @@
     }
 
     .node.college {
-      width: 178px;
+      width: var(--node-width, 178px);
       height: 42px;
       border-color: var(--node-border);
       background: var(--node-bg);
@@ -242,7 +261,7 @@
     }
 
     .node.major {
-      width: 178px;
+      width: var(--node-width, 178px);
       height: 42px;
       border-color: var(--node-border);
       border-radius: 0;
@@ -278,7 +297,7 @@
     .dept-box {
       position: absolute;
       z-index: 1;
-      width: 214px;
+      width: var(--dept-box-width, 214px);
       border: 0;
       border-radius: 0;
       background: var(--dept-bg);
@@ -302,7 +321,7 @@
       position: absolute;
       left: 12px;
       top: -12px;
-      max-width: 188px;
+      max-width: var(--dept-box-title-width, 188px);
       padding: 3px 8px;
       border: 0;
       border-radius: 0;
@@ -410,12 +429,13 @@
 
     .detail-panel {
       position: absolute;
-      top: 18px;
+      top: 0;
       left: 0;
       z-index: 40;
       display: none;
-      width: 340px;
-      max-height: calc(100vh - 160px);
+      width: 420px;
+      max-width: calc(100vw - 32px);
+      max-height: min(420px, calc(100vh - 160px));
       overflow: auto;
       border: 1px solid var(--hairline);
       border-radius: 0;
@@ -436,6 +456,13 @@
       gap: 12px;
       padding: 16px 16px 12px;
       border-bottom: 1px solid var(--hairline);
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .detail-panel.is-dragging .detail-head {
+      cursor: grabbing;
     }
 
     .detail-title {
@@ -453,12 +480,14 @@
     }
 
     .detail-close {
-      min-width: 30px;
+      min-width: 44px;
       min-height: 30px;
       padding: 0 8px;
       background: var(--panel);
       color: var(--ink);
       border-color: var(--hairline);
+      white-space: nowrap;
+      cursor: pointer;
     }
 
     .detail-body {
@@ -470,6 +499,11 @@
     .detail-section {
       display: grid;
       gap: 8px;
+    }
+
+    .detail-section.relation-section {
+      margin-top: 6px;
+      gap: 10px;
     }
 
     .detail-section-title {
@@ -505,7 +539,7 @@
 
     .relation-list {
       display: grid;
-      gap: 8px;
+      gap: 0;
       margin: 0;
       padding: 0;
       list-style: none;
@@ -513,21 +547,54 @@
 
     .relation-card {
       display: grid;
-      gap: 4px;
-      padding: 8px 0;
-      border-top: 1px solid var(--hairline);
+      grid-template-columns: 58px minmax(0, 1fr);
+      column-gap: 18px;
+      row-gap: 4px;
+      align-items: center;
+      padding: 10px 0 8px;
+      border-top: 0;
       font-size: 12px;
       line-height: 1.45;
     }
 
-    .relation-card:first-child {
-      border-top: 0;
-      padding-top: 0;
+    .relation-card.is-new-direction {
+      margin-top: 0;
+      padding-top: 8px;
+      border-top: 1px solid var(--hairline);
     }
 
-    .relation-meta {
-      color: var(--muted);
-      font-size: 11px;
+    .relation-card:first-child {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    .relation-main {
+      display: contents;
+      min-width: 0;
+    }
+
+    .relation-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 58px;
+      height: 20px;
+      padding: 0 8px;
+      background: var(--ink);
+      color: var(--panel);
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .relation-copy {
+      min-width: 0;
+      color: var(--ink);
+      overflow-wrap: anywhere;
     }
 
     .relation-kind {
@@ -535,6 +602,7 @@
     }
 
     .relation-note {
+      grid-column: 2;
       color: var(--muted);
     }
 
@@ -545,7 +613,6 @@
     <div class="app-titlebar">
       <div class="brand">
         <h1>편제 변경 이력</h1>
-        <span class="brand-kicker">ORG FLOW</span>
       </div>
       <div class="filter-controls">
         <label>시작 학년도
@@ -555,7 +622,7 @@
           <select id="endYear"></select>
         </label>
         <label>검색
-          <input id="searchBox" type="search" placeholder="조직명/코드">
+          <input id="searchBox" type="search" placeholder="학과명/전공명/코드">
         </label>
         <button id="resetBtn" type="button">초기화</button>
       </div>
@@ -571,21 +638,25 @@
   </header>
 
   <div class="canvas-wrap" id="canvasWrap">
-    <div class="flow-content" id="flowContent">
-      <div class="year-header" id="yearHeader">
+    <div class="year-header" id="yearHeader">
+      <div class="year-shell">
         <div class="year-track" id="yearTrack"></div>
       </div>
-      <section class="canvas" id="canvas">
-        <svg id="svg">
-          <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"></path>
-            </marker>
-          </defs>
-        </svg>
-        <aside class="detail-panel" id="detailPanel" aria-live="polite" aria-label="선택 조직 상세"></aside>
-        <div class="empty" id="empty">dim_org_unit.csv와 org_unit_relation.csv를 자동으로 불러오는 중입니다.</div>
-      </section>
+    </div>
+    <div class="main-shell">
+      <div class="flow-content" id="flowContent">
+        <section class="canvas" id="canvas">
+          <svg id="svg">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"></path>
+              </marker>
+            </defs>
+          </svg>
+          <aside class="detail-panel" id="detailPanel" aria-live="polite" aria-label="선택 학과 전공 상세"></aside>
+          <div class="empty" id="empty">dim_org_unit.csv와 org_unit_relation.csv를 자동으로 불러오는 중입니다.</div>
+        </section>
+      </div>
     </div>
   </div>
 
@@ -599,7 +670,9 @@
       edges: [],
       selectedNodeKey: "",
       defaultStartYear: "",
-      defaultEndYear: ""
+      defaultEndYear: "",
+      detailPanelMoved: false,
+      detailDrag: null
     };
     const DEFAULT_FILES = {
       dim: "dim_org_unit.csv",
@@ -616,11 +689,12 @@
     };
     const UNIT_TYPE_LABELS = {
       college: "학부",
-      department: "학과",
-      major: "전공"
+      department: "학과(전공)",
+      major: "학과(전공)"
     };
     const LAYOUT = {
       wrapPadding: 32,
+      pageMaxWidth: 1680,
       minCanvasWidth: 800,
       minCanvasHeight: 920,
       canvasPadding: 48,
@@ -641,7 +715,7 @@
       deptBoxMinHeight: 76,
       minGroupGap: 8,
       maxGroupGap: 38,
-      detailPanelWidth: 340,
+      detailPanelWidth: 420,
       detailPanelGap: 48,
       groupLabelFallbackY: 54,
       groupLabelYOffset: 38
@@ -674,14 +748,48 @@
       }
     });
     window.addEventListener("load", bootstrapData);
+    window.addEventListener("resize", () => {
+      if (state.relations.length) render();
+    });
 
     function syncYearHeader() {
-      const x = canvasWrap.scrollLeft;
-      yearHeader.style.transform = `translateX(${x}px)`;
-      yearTrack.style.transform = `translateX(${-x}px)`;
-      if (detailPanel.classList.contains("is-open")) {
-        detailPanel.style.top = `${canvasWrap.scrollTop + 18}px`;
+      yearTrack.style.transform = `translateX(${-canvasWrap.scrollLeft}px)`;
+      if (detailPanel.classList.contains("is-open") && !state.detailPanelMoved) {
+        positionDetailPanel();
       }
+    }
+
+    function centerFlowContent() {
+      requestAnimationFrame(() => {
+        const maxScrollLeft = canvasWrap.scrollWidth - canvasWrap.clientWidth;
+        canvasWrap.scrollLeft = maxScrollLeft > 0 ? Math.floor(maxScrollLeft / 2) : 0;
+        syncYearHeader();
+      });
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function applyResponsiveLayout(yearCount) {
+      const viewportWidth = document.documentElement.clientWidth;
+      const compactness = yearCount > 6 ? 0.075 : 0.085;
+      const nodeWidth = Math.round(clamp(viewportWidth * compactness, 132, 178));
+      const canvasPadding = viewportWidth < 1100 ? 24 : viewportWidth < 1440 ? 36 : 48;
+      const minColumnStep = Math.max(nodeWidth + 18, viewportWidth < 1100 ? 128 : viewportWidth < 1440 ? 148 : 170);
+
+      LAYOUT.wrapPadding = viewportWidth < 1100 ? 16 : 32;
+      LAYOUT.canvasPadding = canvasPadding;
+      LAYOUT.minColumnStep = minColumnStep;
+      LAYOUT.nodeWidth = nodeWidth;
+      LAYOUT.nodeHalfWidth = nodeWidth / 2;
+      LAYOUT.edgeAnchorOffset = nodeWidth / 2 + 1;
+      LAYOUT.deptBoxHalfWidth = nodeWidth / 2 + 18;
+
+      document.documentElement.style.setProperty("--node-width", `${nodeWidth}px`);
+      document.documentElement.style.setProperty("--dept-box-width", `${nodeWidth + 36}px`);
+      document.documentElement.style.setProperty("--dept-box-title-width", `${nodeWidth + 10}px`);
+      document.documentElement.style.setProperty("--page-gutter", `${viewportWidth < 1100 ? 12 : 18}px`);
     }
 
     async function bootstrapData() {
@@ -846,12 +954,13 @@
       const allSnapshots = buildSnapshots();
       const years = [];
       for (let year = minYear - 1; year <= maxYear; year++) years.push(year);
+      applyResponsiveLayout(years.length);
       const context = buildLayoutContext(relations, years, allSnapshots);
       const lanes = context.lanes;
 
       const canvasWidth = Math.max(
         LAYOUT.minCanvasWidth,
-        document.documentElement.clientWidth - 2 * LAYOUT.wrapPadding
+        Math.min(LAYOUT.pageMaxWidth, document.documentElement.clientWidth - 2 * LAYOUT.wrapPadding)
       );
       const firstColX = LAYOUT.canvasPadding + LAYOUT.nodeHalfWidth;
       const colStep = years.length > 1
@@ -863,7 +972,7 @@
       const graphWidth = years.length > 1
         ? Math.max(canvasWidth, firstColX + (years.length - 1) * colStep + LAYOUT.nodeHalfWidth + LAYOUT.canvasPadding)
         : canvasWidth;
-      const width = graphWidth + LAYOUT.detailPanelGap + LAYOUT.detailPanelWidth + LAYOUT.canvasPadding;
+      const width = graphWidth;
 
       const maxY = Math.max(...[...context.yByNode.values()], LAYOUT.minContentHeight);
       const height = Math.max(LAYOUT.minCanvasHeight, maxY + LAYOUT.canvasBottomPadding);
@@ -872,7 +981,6 @@
       canvas.style.height = `${height}px`;
       flowContent.style.width = `${width}px`;
       yearTrack.style.width = `${width}px`;
-      detailPanel.style.left = `${graphWidth + LAYOUT.detailPanelGap}px`;
       svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
       svg.setAttribute("width", width);
       svg.setAttribute("height", height);
@@ -929,8 +1037,8 @@
       drawEdges();
       empty.style.display = state.edges.length ? "none" : "grid";
       state.nodes = [...nodeMap.values()];
-      syncYearHeader();
       applySearch();
+      centerFlowContent();
     }
 
     function buildSnapshots() {
@@ -1431,7 +1539,7 @@
     }
 
     function showTooltip(event, node) {
-      const type = UNIT_TYPE_LABELS[node.unit.type] || node.unit.type || "조직";
+      const type = UNIT_TYPE_LABELS[node.unit.type] || node.unit.type || "학과(전공)";
       const title = fullDisplayNameForNode(node);
       const relatedEdge = state.edges.find(edge =>
         edge.source === node.code &&
@@ -1440,7 +1548,7 @@
         ["closed", "splitted", "merged", "renewed"].includes(edge.type)
       );
       const retainMessage = relatedEdge
-        ? `<br><span style="color:var(--muted)">${escapeHtml(title)}은 ${escapeHtml(retentionLabel(relatedEdge.validUntil))}</span>`
+        ? `<br><span style="color:var(--muted)">${escapeHtml(`${title}${josa(title, "은/는")} ${retentionLabel(relatedEdge.validUntil)}`)}</span>`
         : "";
       tooltip.innerHTML = `
         <strong>${escapeHtml(title)}</strong><br>
@@ -1466,10 +1574,15 @@
 
       const incoming = state.edges.filter(edge => nodeKey(edge.targetYear, edge.target) === state.selectedNodeKey);
       const outgoing = state.edges.filter(edge => nodeKey(edge.sourceYear, edge.source) === state.selectedNodeKey);
-      const type = UNIT_TYPE_LABELS[node.unit.type] || node.unit.type || "조직";
+      const type = UNIT_TYPE_LABELS[node.unit.type] || node.unit.type || "학과(전공)";
       const title = fullDisplayNameForNode(node);
-      const parentPath = parentPathLabel(node.path);
-      const fullPath = pathLabel(node.path);
+      const collegeCode = collegeCodeFromPath(node.path, node.code);
+      const deptCode = deptCodeFromPath(node.path);
+      const detailRows = [
+        detailRow("코드", node.code),
+        collegeCode ? detailRow("소속단대", labelOf(collegeCode)) : "",
+        deptCode && deptCode !== node.code ? detailRow("소속학부", labelOf(deptCode)) : ""
+      ].join("");
 
       detailPanel.innerHTML = `
         <div class="detail-head">
@@ -1483,13 +1596,10 @@
           <section class="detail-section">
             <div class="detail-section-title">기본 정보</div>
             <dl class="detail-list">
-              ${detailRow("코드", node.code)}
-              ${detailRow("상위", parentPath || "-")}
-              ${detailRow("경로", fullPath || "-")}
+              ${detailRows}
             </dl>
           </section>
-          ${relationSection("이전 연결", incoming, "incoming")}
-          ${relationSection("다음 연결", outgoing, "outgoing")}
+          ${relationSection([...incoming, ...outgoing], edge => incoming.includes(edge) ? "incoming" : "outgoing")}
         </div>
       `;
       detailPanel.querySelector(".detail-close").addEventListener("click", () => {
@@ -1497,24 +1607,96 @@
         hideDetailPanel();
         applySearch();
       });
+      attachDetailPanelDrag();
       detailPanel.classList.add("is-open");
       revealDetailPanel();
     }
 
     function hideDetailPanel() {
       detailPanel.classList.remove("is-open");
+      detailPanel.classList.remove("is-dragging");
       detailPanel.innerHTML = "";
+      state.detailPanelMoved = false;
+      state.detailDrag = null;
     }
 
     function revealDetailPanel() {
-      detailPanel.style.top = `${canvasWrap.scrollTop + 18}px`;
-      const targetLeft = Math.max(
-        0,
-        detailPanel.offsetLeft + LAYOUT.detailPanelWidth + 24 - canvasWrap.clientWidth
-      );
-      if (canvasWrap.scrollLeft < targetLeft) {
-        canvasWrap.scrollTo({ left: targetLeft, behavior: "smooth" });
+      state.detailPanelMoved = false;
+      positionDetailPanel();
+    }
+
+    function positionDetailPanel() {
+      const anchor = selectedNodeElement();
+      if (!anchor) return;
+
+      const panelWidth = detailPanel.offsetWidth || LAYOUT.detailPanelWidth;
+      const panelHeight = detailPanel.offsetHeight || 260;
+      const gap = 10;
+      const minLeft = 12;
+      const maxLeft = Math.max(minLeft, canvas.clientWidth - panelWidth - 12);
+      const centeredLeft = anchor.offsetLeft + anchor.offsetWidth / 2 - panelWidth / 2;
+      const belowTop = anchor.offsetTop + anchor.offsetHeight + gap;
+      const aboveTop = anchor.offsetTop - panelHeight - gap;
+      const top = belowTop + panelHeight + 12 <= canvas.clientHeight
+        ? belowTop
+        : Math.max(12, aboveTop);
+
+      detailPanel.style.left = `${clamp(centeredLeft, minLeft, maxLeft)}px`;
+      detailPanel.style.top = `${top}px`;
+    }
+
+    function attachDetailPanelDrag() {
+      const handle = detailPanel.querySelector(".detail-head");
+      if (!handle) return;
+
+      handle.addEventListener("pointerdown", event => {
+        if (event.target.closest(".detail-close")) return;
+        event.preventDefault();
+
+        const left = parseFloat(detailPanel.style.left) || 0;
+        const top = parseFloat(detailPanel.style.top) || 0;
+        state.detailDrag = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+          left,
+          top
+        };
+        state.detailPanelMoved = true;
+        detailPanel.classList.add("is-dragging");
+        handle.setPointerCapture(event.pointerId);
+      });
+
+      handle.addEventListener("pointermove", event => {
+        const drag = state.detailDrag;
+        if (!drag || drag.pointerId !== event.pointerId) return;
+
+        const maxLeft = Math.max(12, canvas.clientWidth - detailPanel.offsetWidth - 12);
+        const maxTop = Math.max(12, canvas.clientHeight - detailPanel.offsetHeight - 12);
+        const nextLeft = drag.left + event.clientX - drag.startX;
+        const nextTop = drag.top + event.clientY - drag.startY;
+
+        detailPanel.style.left = `${clamp(nextLeft, 12, maxLeft)}px`;
+        detailPanel.style.top = `${clamp(nextTop, 12, maxTop)}px`;
+      });
+
+      handle.addEventListener("pointerup", event => finishDetailPanelDrag(event.pointerId, handle));
+      handle.addEventListener("pointercancel", event => finishDetailPanelDrag(event.pointerId, handle));
+    }
+
+    function finishDetailPanelDrag(pointerId, handle) {
+      const drag = state.detailDrag;
+      if (!drag || drag.pointerId !== pointerId) return;
+      state.detailDrag = null;
+      detailPanel.classList.remove("is-dragging");
+      if (handle.hasPointerCapture(pointerId)) {
+        handle.releasePointerCapture(pointerId);
       }
+    }
+
+    function selectedNodeElement() {
+      return [...canvas.querySelectorAll(".node")]
+        .find(node => node.dataset.nodeKey === state.selectedNodeKey);
     }
 
     function detailRow(label, value) {
@@ -1526,14 +1708,20 @@
       `;
     }
 
-    function relationSection(title, edges, direction) {
-      const items = edges
-        .sort((a, b) => relationSortValue(a) - relationSortValue(b))
-        .map(edge => relationItem(edge, direction))
+    function relationSection(edges, directionForEdge) {
+      const relationItems = edges
+        .map(edge => ({ edge, direction: directionForEdge(edge) }))
+        .sort((a, b) => relationSortValue(a) - relationSortValue(b));
+      const items = relationItems
+        .map((item, index) => {
+          const previous = relationItems[index - 1];
+          const startsNewDirection = Boolean(previous && previous.direction !== item.direction);
+          return relationItem(item.edge, item.direction, startsNewDirection);
+        })
         .join("");
       return `
-        <section class="detail-section">
-          <div class="detail-section-title">${escapeHtml(title)}</div>
+        <section class="detail-section relation-section">
+          <div class="detail-section-title">변경 관계</div>
           <ul class="relation-list">
             ${items || '<li class="relation-card relation-note">연결 정보 없음</li>'}
           </ul>
@@ -1541,36 +1729,73 @@
       `;
     }
 
-    function relationItem(edge, direction) {
+    function relationItem(edge, direction, startsNewDirection = false) {
       const otherCode = direction === "incoming" ? edge.source : edge.target;
       const otherYear = direction === "incoming" ? edge.sourceYear : edge.targetYear;
-      const validUntil = edge.validUntil && edge.validUntil !== "9999"
-        ? ` · ${escapeHtml(retentionLabel(edge.validUntil))}`
-        : "";
+      const otherName = displayNameForKey(otherYear, otherCode);
+      const badge = direction === "incoming" ? "전년도" : "다음연도";
+      const particle = direction === "incoming" ? "에서" : josa(otherName, "으로/로");
+      const relationCopy = edge.type === "unchanged"
+        ? changeTypeLabel(edge.type)
+        : `${otherName}${particle} ${changeTypeLabel(edge.type)}`;
+      const retention = retentionCopy(edge, direction, otherName);
       const note = edge.note ? `<div class="relation-note">${escapeHtml(edge.note)}</div>` : "";
+      const directionClass = startsNewDirection ? " is-new-direction" : "";
       return `
-        <li class="relation-card">
-          <div><span class="relation-kind">${escapeHtml(changeTypeLabel(edge.type))}</span>${validUntil}</div>
-          <div>${escapeHtml(otherYear)}학년도 · ${escapeHtml(displayNameForKey(otherYear, otherCode))}</div>
-          <div class="relation-meta">${escapeHtml(otherCode || "-")}</div>
+        <li class="relation-card${directionClass}">
+          <div class="relation-main">
+            <span class="relation-badge">${escapeHtml(badge)}</span>
+            <span class="relation-copy">${escapeHtml(relationCopy)}</span>
+          </div>
+          ${retention ? `<div class="relation-note">${escapeHtml(retention)}</div>` : ""}
           ${note}
         </li>
       `;
     }
 
     function relationSortValue(edge) {
-      return edge.type === "unchanged" ? 1 : 0;
+      const directionValue = state.selectedNodeKey === nodeKey(edge.targetYear, edge.target) ? 0 : 10;
+      const changeValue = edge.type === "unchanged" ? 1 : 0;
+      return directionValue + changeValue;
     }
 
     function changeTypeLabel(type) {
-      if (type === "unchanged") return "유지";
+      if (type === "unchanged") return "변경없음";
       return CHANGE_TYPE_LABELS[type] ?? type;
+    }
+
+    function retentionCopy(edge, direction, otherName) {
+      if (!edge.validUntil) return "";
+      const target = direction === "incoming" ? otherName : "현재 학과(전공)";
+      return `${target}${josa(target, "은/는")} ${retentionLabel(edge.validUntil)}`;
     }
 
     function retentionLabel(validUntil) {
       return validUntil === "9999"
         ? "현 재적생이 졸업할 때까지 유지"
         : `${validUntil}학년도 졸업자까지 유지`;
+    }
+
+    function finalConsonantIndex(text) {
+      const chars = [...String(text).trim()].reverse();
+      for (const char of chars) {
+        const code = char.charCodeAt(0);
+        if (code >= 0xac00 && code <= 0xd7a3) {
+          return (code - 0xac00) % 28;
+        }
+      }
+      return -1;
+    }
+
+    function josa(text, pair) {
+      const jong = finalConsonantIndex(text);
+      const [withBatchim, withoutBatchim] = pair.split("/");
+
+      if (pair === "으로/로") {
+        return jong !== 0 && jong !== 8 ? "으로" : "로";
+      }
+
+      return jong !== 0 ? withBatchim : withoutBatchim;
     }
 
     function moveTooltip(event) {
@@ -1608,6 +1833,10 @@
 
     function majorCodeFromPath(path) {
       return (path || []).find(code => state.units.get(code)?.type === "major") || "";
+    }
+
+    function collegeCodeFromPath(path, fallbackCode = "") {
+      return (path || []).find(code => state.units.get(code)?.type === "college") || topCollegeCode(fallbackCode) || "";
     }
 
     function topCollegeCode(code) {
