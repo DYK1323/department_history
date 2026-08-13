@@ -174,7 +174,8 @@ function needsAdminAuth(urlPath) {
   return (
     urlPath === '/admin.html' ||
     urlPath === '/api/admin/bootstrap' ||
-    urlPath === '/api/relations'
+    urlPath === '/api/relations' ||
+    urlPath.startsWith('/api/relations/')
   );
 }
 
@@ -653,6 +654,165 @@ async function insertRelation(payload) {
   };
 }
 
+async function loadRelationDetail(relationId) {
+  if (!fs.existsSync(DB_PATH)) {
+    throw new Error('SQLite database does not exist');
+  }
+
+  const numericRelationId = assertInteger(relationId, 'relationId');
+  const { unitsByCode } = await loadUnits();
+  const rows = await sqliteQueryJson(`
+    SELECT
+      cr.relation_id,
+      cr.change_year,
+      cr.change_type,
+      cr.retain_until_grad_year,
+      COALESCE(cr.note, '') AS relation_note,
+      endpoint.side,
+      endpoint.sort_order,
+      endpoint.unit_code
+    FROM change_relation cr
+    LEFT JOIN change_relation_endpoint endpoint ON endpoint.relation_id = cr.relation_id
+    WHERE cr.relation_id = ${sqlValue(numericRelationId)}
+    ORDER BY endpoint.side, endpoint.sort_order;
+  `);
+
+  if (!rows.length) {
+    throw new Error(`Relation not found: ${numericRelationId}`);
+  }
+
+  const detail = {
+    relationId: numericRelationId,
+    changeYear: Number(rows[0].change_year),
+    changeType: rows[0].change_type,
+    changeTypeLabel: CHANGE_TYPE_LABELS[rows[0].change_type] || rows[0].change_type,
+    retainUntilGradYear: rows[0].retain_until_grad_year === null ? null : Number(rows[0].retain_until_grad_year),
+    note: cleanText(rows[0].relation_note) || null,
+    prev: [],
+    after: [],
+  };
+
+  rows.forEach(row => {
+    if (row.side === 'prev' || row.side === 'after') {
+      detail[row.side].push(deriveEndpoint(row.unit_code, unitsByCode));
+    }
+  });
+
+  detail.expansionCount = relationExpansionCount(detail.prev.length, detail.after.length);
+  return detail;
+}
+
+async function updateRelation(relationId, payload) {
+  if (!fs.existsSync(DB_PATH)) {
+    throw new Error('SQLite database does not exist');
+  }
+
+  const numericRelationId = assertInteger(relationId, 'relationId');
+  const relation = validateRelationPayload(payload);
+  const existing = await sqliteQueryJson(`
+    SELECT relation_id
+    FROM change_relation
+    WHERE relation_id = ${sqlValue(numericRelationId)}
+    LIMIT 1;
+  `);
+  if (!existing.length) {
+    throw new Error(`Relation not found: ${numericRelationId}`);
+  }
+
+  const { unitsByCode } = await loadUnits();
+  const prevEndpoints = relation.prevUnitCodes.map(code => deriveEndpoint(code, unitsByCode));
+  const afterEndpoints = relation.afterUnitCodes.map(code => deriveEndpoint(code, unitsByCode));
+
+  const ids = await sqliteQueryJson(`
+    SELECT (SELECT COALESCE(MAX(endpoint_id), 0) FROM change_relation_endpoint) AS max_endpoint_id;
+  `);
+  let endpointId = Number((ids[0] || {}).max_endpoint_id || 0) + 1;
+
+  const statements = ['PRAGMA foreign_keys = ON;', 'BEGIN IMMEDIATE;'];
+  statements.push(`
+    UPDATE change_relation
+    SET
+      change_year = ${sqlValue(relation.changeYear)},
+      change_type = ${sqlValue(relation.changeType)},
+      retain_until_grad_year = ${sqlValue(relation.retainUntilGradYear)},
+      note = ${sqlValue(relation.note)}
+    WHERE relation_id = ${sqlValue(numericRelationId)};
+  `);
+  statements.push(`
+    DELETE FROM change_relation_endpoint
+    WHERE relation_id = ${sqlValue(numericRelationId)};
+  `);
+
+  prevEndpoints.forEach((endpoint, index) => {
+    statements.push(`
+      INSERT INTO change_relation_endpoint (
+        endpoint_id,
+        relation_id,
+        side,
+        unit_code,
+        college_code,
+        department_code,
+        major_code,
+        sort_order
+      ) VALUES (
+        ${sqlValue(endpointId)},
+        ${sqlValue(numericRelationId)},
+        'prev',
+        ${sqlValue(endpoint.unitCode)},
+        ${sqlValue(endpoint.collegeCode)},
+        ${sqlValue(endpoint.departmentCode)},
+        ${sqlValue(endpoint.majorCode)},
+        ${sqlValue(index)}
+      );
+    `);
+    endpointId += 1;
+  });
+
+  afterEndpoints.forEach((endpoint, index) => {
+    statements.push(`
+      INSERT INTO change_relation_endpoint (
+        endpoint_id,
+        relation_id,
+        side,
+        unit_code,
+        college_code,
+        department_code,
+        major_code,
+        sort_order
+      ) VALUES (
+        ${sqlValue(endpointId)},
+        ${sqlValue(numericRelationId)},
+        'after',
+        ${sqlValue(endpoint.unitCode)},
+        ${sqlValue(endpoint.collegeCode)},
+        ${sqlValue(endpoint.departmentCode)},
+        ${sqlValue(endpoint.majorCode)},
+        ${sqlValue(index)}
+      );
+    `);
+    endpointId += 1;
+  });
+
+  statements.push('COMMIT;');
+  await sqliteRun(statements.join('\n'));
+  await syncCsvExports();
+
+  const detail = await loadRelationDetail(numericRelationId);
+  return {
+    relationId: numericRelationId,
+    changeYear: detail.changeYear,
+    relation: {
+      changeType: detail.changeType,
+      changeTypeLabel: detail.changeTypeLabel,
+      retainUntilGradYear: detail.retainUntilGradYear,
+      note: detail.note,
+      prev: detail.prev,
+      after: detail.after,
+      expansionCount: detail.expansionCount,
+    },
+  };
+}
+
 async function handleApi(req, res, urlPath) {
   if (urlPath === '/api/admin/bootstrap') {
     if (req.method !== 'GET') {
@@ -682,6 +842,37 @@ async function handleApi(req, res, urlPath) {
     } catch (error) {
       sendJson(res, 400, { ok: false, error: error.message || 'Request failed' });
     }
+    return true;
+  }
+
+  const relationMatch = urlPath.match(/^\/api\/relations\/(\d+)$/);
+  if (relationMatch) {
+    const relationId = Number(relationMatch[1]);
+
+    if (req.method === 'GET') {
+      try {
+        const detail = await loadRelationDetail(relationId);
+        sendJson(res, 200, { ok: true, relation: detail });
+      } catch (error) {
+        sendJson(res, 404, { ok: false, error: error.message || 'Relation not found' });
+      }
+      return true;
+    }
+
+    if (req.method === 'PATCH') {
+      try {
+        const body = await readRequestBody(req);
+        const payload = body ? JSON.parse(body) : {};
+        const result = await updateRelation(relationId, payload);
+        sendJson(res, 200, { ok: true, ...result });
+      } catch (error) {
+        const statusCode = String(error.message || '').includes('not found') ? 404 : 400;
+        sendJson(res, statusCode, { ok: false, error: error.message || 'Request failed' });
+      }
+      return true;
+    }
+
+    sendJson(res, 405, { ok: false, error: 'Method not allowed' });
     return true;
   }
 

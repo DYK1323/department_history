@@ -987,7 +987,7 @@
         ? `관계 #${state.editingRelationId} 수정 중`
         : '수정 모드';
       modeBannerCopy.textContent = isEditMode
-        ? '저장은 다음 단계에서 PATCH로 연결합니다. 지금은 수정 대상 주입과 화면 상태를 먼저 안정화합니다.'
+        ? '불러온 관계를 기준으로 내용을 수정하고 저장하면 같은 관계가 갱신됩니다.'
         : '';
       saveBtn.textContent = isEditMode ? '수정 저장' : '저장';
       resetRelationBtn.textContent = isEditMode ? '수정 취소' : '현재 입력 초기화';
@@ -1087,7 +1087,7 @@
       }
 
       if (!state.isSubmitting) {
-        saveBtn.disabled = preview.errors.length > 0 || state.mode === 'edit';
+        saveBtn.disabled = preview.errors.length > 0;
       }
     }
 
@@ -1280,11 +1280,6 @@
     }
 
     async function submitRelation() {
-      if (state.mode === 'edit') {
-        showError('수정 저장은 다음 단계에서 연결됩니다. 지금은 수정 모드 진입과 상태 전환만 반영된 상태입니다.');
-        return;
-      }
-
       const preview = buildPreview();
       renderPreview();
       if (preview.errors.length) return;
@@ -1302,8 +1297,9 @@
           afterUnitCodes: [...state.selectedAfter],
         };
 
-        const response = await fetch('/api/relations', {
-          method: 'POST',
+        const isEditMode = state.mode === 'edit' && state.editingRelationId;
+        const response = await fetch(isEditMode ? `/api/relations/${state.editingRelationId}` : '/api/relations', {
+          method: isEditMode ? 'PATCH' : 'POST',
           headers: { 'Content-Type': 'application/json; charset=utf-8' },
           body: JSON.stringify(payload),
         });
@@ -1312,7 +1308,9 @@
           throw new Error(result.error || '저장에 실패했습니다.');
         }
 
-        showStatus(`관계 #${result.relationId} 저장 완료. ${result.changeYear}학년도에서 계속 입력할 수 있습니다.`);
+        showStatus(isEditMode
+          ? `관계 #${result.relationId} 수정 저장 완료.`
+          : `관계 #${result.relationId} 저장 완료. ${result.changeYear}학년도에서 계속 입력할 수 있습니다.`);
         resetRelationForm({ keepStatus: true });
         await refreshBootstrap();
       } catch (error) {
@@ -1362,13 +1360,7 @@
       showStatus('수정 모드를 종료하고 새 입력 상태로 돌아왔습니다.');
     }
 
-    function enterEditMode(relationId) {
-      const relation = (state.bootstrap?.recentRelations || []).find(item => Number(item.relationId) === Number(relationId));
-      if (!relation) {
-        showError('최근 입력 목록에서 수정 대상을 찾지 못했습니다.');
-        return;
-      }
-
+    function applyRelationToForm(relation) {
       state.mode = 'edit';
       state.editingRelationId = Number(relation.relationId);
       state.selectedPrev = relation.prev.map(item => item.unitCode).filter(Boolean);
@@ -1387,7 +1379,26 @@
       renderSelected('after');
       syncTypeChoiceButtons();
       renderPreview();
-      showStatus(`관계 #${relation.relationId} 수정 모드로 불러왔습니다. 다음 단계에서 수정 저장이 연결됩니다.`);
+    }
+
+    async function enterEditMode(relationId) {
+      hideFeedback();
+      setSubmitting(true);
+
+      try {
+        const response = await fetch(`/api/relations/${relationId}`, { cache: 'no-store' });
+        const result = await response.json();
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || '수정 대상을 불러오지 못했습니다.');
+        }
+
+        applyRelationToForm(result.relation);
+        showStatus(`관계 #${relationId} 수정 모드로 불러왔습니다.`);
+      } catch (error) {
+        showError(error.message || '수정 대상을 불러오지 못했습니다.');
+      } finally {
+        setSubmitting(false);
+      }
     }
 
     function setSubmitting(isSubmitting) {
