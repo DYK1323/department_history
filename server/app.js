@@ -9,6 +9,8 @@ const PORT = Number(process.env.PORT) || 3004;
 const ROOT = path.join(__dirname, '..');
 const DB_PATH = process.env.DB_PATH || path.join(ROOT, 'department_history.sqlite');
 const SQLITE_BIN = process.env.SQLITE_BIN || 'sqlite3';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 const CSV_EXPORT_DIR = process.env.CSV_EXPORT_DIR
   ? path.resolve(process.env.CSV_EXPORT_DIR)
   : ROOT;
@@ -157,6 +159,42 @@ function sendJson(res, statusCode, payload) {
     'Cache-Control': 'no-store',
   });
   res.end(JSON.stringify(payload));
+}
+
+function sendAdminAuthRequired(res) {
+  res.writeHead(401, {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Cache-Control': 'no-store',
+    'WWW-Authenticate': 'Basic realm="Department History Admin", charset="UTF-8"',
+  });
+  res.end('Admin authentication required');
+}
+
+function needsAdminAuth(urlPath) {
+  return (
+    urlPath === '/admin.html' ||
+    urlPath === '/api/admin/bootstrap' ||
+    urlPath === '/api/relations'
+  );
+}
+
+function isAuthorizedAdmin(req) {
+  if (!ADMIN_PASSWORD) return false;
+
+  const header = req.headers.authorization || '';
+  const [scheme, encoded] = header.split(' ');
+  if (scheme !== 'Basic' || !encoded) return false;
+
+  try {
+    const decoded = Buffer.from(encoded, 'base64').toString('utf8');
+    const separatorIndex = decoded.indexOf(':');
+    if (separatorIndex < 0) return false;
+    const username = decoded.slice(0, separatorIndex);
+    const password = decoded.slice(separatorIndex + 1);
+    return username === ADMIN_USERNAME && password === ADMIN_PASSWORD;
+  } catch (_error) {
+    return false;
+  }
 }
 
 function readRequestBody(req) {
@@ -390,6 +428,20 @@ async function loadBootstrapData() {
     LIMIT 120;
   `);
 
+  const relationRows = await sqliteQueryJson(`
+    SELECT
+      relation_id,
+      change_year,
+      COALESCE(prev_college_code, '') AS prev_college_code,
+      COALESCE(prev_dept_code, '') AS prev_dept_code,
+      COALESCE(prev_major_code, '') AS prev_major_code,
+      COALESCE(after_college_code, '') AS after_college_code,
+      COALESCE(after_dept_code, '') AS after_dept_code,
+      COALESCE(after_major_code, '') AS after_major_code
+    FROM v_org_unit_relation_legacy
+    ORDER BY relation_id;
+  `);
+
   const groupedRecent = new Map();
   recentRelationRows.forEach(row => {
     const relationId = Number(row.relation_id);
@@ -409,6 +461,24 @@ async function loadBootstrapData() {
     }
   });
 
+  const relationGraphRows = relationRows.map(row => ({
+    year: Number(row.change_year),
+    source: cleanText(row.prev_major_code) || cleanText(row.prev_dept_code) || cleanText(row.prev_college_code),
+    target: cleanText(row.after_major_code) || cleanText(row.after_dept_code) || cleanText(row.after_college_code),
+    prevPath: [
+      cleanText(row.prev_college_code),
+      cleanText(row.prev_dept_code),
+      cleanText(row.prev_major_code),
+    ].filter(Boolean),
+    afterPath: [
+      cleanText(row.after_college_code),
+      cleanText(row.after_dept_code),
+      cleanText(row.after_major_code),
+    ].filter(Boolean),
+  })).filter(row => row.year && (row.source || row.target));
+
+  const activeUnitCodesByYear = buildActiveUnitCodesByYear(relationGraphRows, unitsByCode);
+
   return {
     units: units.map(unit => buildUnitDto(unit.unit_code, unitsByCode)),
     changeTypes: Object.entries(CHANGE_TYPE_LABELS).map(([code, label]) => ({ code, label })),
@@ -417,6 +487,7 @@ async function loadBootstrapData() {
       acc[String(row.change_year)] = Number(row.relation_count);
       return acc;
     }, {}),
+    activeUnitCodesByYear,
     recentRelations: [...groupedRecent.values()].slice(0, 12).map(relation => {
       const prev = relation.prev.map(code => deriveEndpoint(code, unitsByCode));
       const after = relation.after.map(code => deriveEndpoint(code, unitsByCode));
@@ -433,6 +504,46 @@ async function loadBootstrapData() {
       };
     }),
   };
+}
+
+function buildActiveUnitCodesByYear(relationRows, unitsByCode) {
+  const changeYears = [...new Set(relationRows.map(row => row.year))].sort((a, b) => a - b);
+  if (!changeYears.length) return {};
+
+  const firstChangeYear = changeYears[0];
+  const snapshots = new Map();
+  const base = new Map();
+
+  relationRows
+    .filter(row => row.year === firstChangeYear)
+    .forEach(row => {
+      if (!row.source) return;
+      const path = row.prevPath.length ? row.prevPath : buildPathCodes(row.source, unitsByCode);
+      base.set(row.source, path);
+    });
+
+  snapshots.set(firstChangeYear - 1, base);
+
+  let previous = new Map(base);
+  changeYears.forEach(year => {
+    const next = new Map(previous);
+    relationRows
+      .filter(row => row.year === year)
+      .forEach(row => {
+        if (row.source) next.delete(row.source);
+        if (row.target) {
+          const path = row.afterPath.length ? row.afterPath : buildPathCodes(row.target, unitsByCode);
+          next.set(row.target, path);
+        }
+      });
+    snapshots.set(year, next);
+    previous = next;
+  });
+
+  return [...snapshots.entries()].reduce((acc, [year, snapshot]) => {
+    acc[String(year)] = [...snapshot.keys()];
+    return acc;
+  }, {});
 }
 
 async function insertRelation(payload) {
@@ -582,6 +693,11 @@ const server = http.createServer(async (req, res) => {
   let urlPath = req.url.split('?')[0];
   if (urlPath === '/' || urlPath === '') {
     urlPath = '/index.html';
+  }
+
+  if (needsAdminAuth(urlPath) && !isAuthorizedAdmin(req)) {
+    sendAdminAuthRequired(res);
+    return;
   }
 
   if (urlPath.startsWith('/api/')) {

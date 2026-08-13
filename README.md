@@ -40,6 +40,8 @@ SQLite DB가 있으면 서버가 `dim_org_unit.csv`, `org_unit_relation.csv` 요
 - `POST /api/relations`
   - `change_year` 기준으로 관계를 직접 저장합니다.
 
+관리자 화면과 관리자 API는 Basic 인증으로 보호됩니다. `ADMIN_PASSWORD`가 비어 있으면 `admin.html` 및 관리자 API에 접근할 수 없습니다.
+
 예시:
 
 ```json
@@ -83,6 +85,10 @@ SQLite DB가 있으면 서버가 `dim_org_unit.csv`, `org_unit_relation.csv` 요
   - 저장 성공 후 호환 CSV를 다른 디렉터리에 생성
 - `DISABLE_CSV_SYNC=1`
   - 저장 성공 후 CSV 재생성을 비활성화
+- `ADMIN_USERNAME`
+  - 관리자 로그인 아이디, 기본값은 `admin`
+- `ADMIN_PASSWORD`
+  - 관리자 로그인 비밀번호, 값이 있어야 `admin.html`과 관리자 API 접근 가능
 
 실제 작업 DB를 건드리지 않고 저장 검증을 할 때는 `DB_PATH`를 복사본 DB로 바꾸고 `DISABLE_CSV_SYNC=1` 또는 `CSV_EXPORT_DIR`을 함께 사용하면 됩니다.
 
