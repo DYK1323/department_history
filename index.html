@@ -606,6 +606,168 @@
       color: var(--muted);
     }
 
+    .editor-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(246, 245, 244, 0.82);
+      backdrop-filter: blur(8px);
+    }
+
+    .editor-modal.is-open {
+      display: flex;
+    }
+
+    .editor-panel {
+      width: min(760px, calc(100vw - 32px));
+      max-height: calc(100vh - 40px);
+      overflow: auto;
+      border: 1px solid var(--hairline);
+      background: var(--panel);
+    }
+
+    .editor-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .editor-title {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .editor-subtitle {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .editor-body {
+      display: grid;
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .editor-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .editor-grid label,
+    .editor-stack label {
+      display: grid;
+      gap: 6px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: normal;
+    }
+
+    .editor-grid input,
+    .editor-grid select,
+    .editor-stack textarea,
+    .endpoint-input {
+      width: 100%;
+    }
+
+    .editor-stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    .editor-section {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--hairline);
+      background: #fcfbfa;
+    }
+
+    .editor-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .editor-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .editor-helper,
+    .editor-status {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .editor-status[data-tone="error"] {
+      color: var(--closed);
+    }
+
+    .editor-status[data-tone="success"] {
+      color: var(--created);
+    }
+
+    .endpoint-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .endpoint-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .endpoint-remove,
+    .editor-secondary {
+      min-width: 44px;
+      padding: 0 10px;
+      border-color: var(--hairline);
+      background: var(--panel);
+      color: var(--ink);
+    }
+
+    .editor-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .editor-actions-right {
+      display: flex;
+      gap: 10px;
+    }
+
+    @media (max-width: 720px) {
+      .editor-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .editor-actions {
+        flex-direction: column-reverse;
+      }
+
+      .editor-actions-right {
+        justify-content: flex-end;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -624,6 +786,7 @@
         <label>검색
           <input id="searchBox" type="search" placeholder="학과명/전공명/코드">
         </label>
+        <button id="openEditorBtn" type="button">개편 입력</button>
         <button id="resetBtn" type="button">초기화</button>
       </div>
       <div class="legend">
@@ -661,6 +824,60 @@
   </div>
 
   <div class="tooltip" id="tooltip"></div>
+  <div class="editor-modal" id="editorModal" aria-hidden="true">
+    <div class="editor-panel" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+      <div class="editor-head">
+        <div>
+          <h2 class="editor-title" id="editorTitle">편제개편 입력</h2>
+          <div class="editor-subtitle">편제단위를 선택하면 경로 코드는 자동으로 채워집니다.</div>
+        </div>
+        <button class="editor-secondary" id="editorCloseBtn" type="button">닫기</button>
+      </div>
+      <form class="editor-body" id="editorForm">
+        <div class="editor-grid">
+          <label>변경 학년도
+            <input id="editorYear" name="changeYear" type="number" min="1900" step="1" required>
+          </label>
+          <label>변경 유형
+            <select id="editorType" name="changeType" required></select>
+          </label>
+        </div>
+        <div class="editor-grid">
+          <label>존속기한
+            <input id="editorRetainUntil" name="retainUntilGradYear" type="number" min="1900" step="1" placeholder="예: 2028">
+          </label>
+          <label>비고
+            <input id="editorNote" name="note" type="text" placeholder="선택 입력">
+          </label>
+        </div>
+        <section class="editor-section">
+          <div class="editor-section-head">
+            <div class="editor-section-title">이전 편제</div>
+            <button class="editor-secondary" id="addPrevEndpointBtn" type="button">추가</button>
+          </div>
+          <div class="editor-helper" id="prevEndpointHelper"></div>
+          <div class="endpoint-list" id="prevEndpointList"></div>
+        </section>
+        <section class="editor-section">
+          <div class="editor-section-head">
+            <div class="editor-section-title">이후 편제</div>
+            <button class="editor-secondary" id="addAfterEndpointBtn" type="button">추가</button>
+          </div>
+          <div class="editor-helper" id="afterEndpointHelper"></div>
+          <div class="endpoint-list" id="afterEndpointList"></div>
+        </section>
+        <div class="editor-status" id="editorStatus"></div>
+        <div class="editor-actions">
+          <div class="editor-helper">현재는 관계 1건씩 저장합니다. 저장 후 화면 데이터가 즉시 다시 로드됩니다.</div>
+          <div class="editor-actions-right">
+            <button class="editor-secondary" id="editorCancelBtn" type="button">취소</button>
+            <button id="editorSubmitBtn" type="submit">저장</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  <datalist id="unitOptionList"></datalist>
 
   <script>
     const state = {
@@ -672,7 +889,8 @@
       defaultStartYear: "",
       defaultEndYear: "",
       detailPanelMoved: false,
-      detailDrag: null
+      detailDrag: null,
+      editorEndpointSeed: 0
     };
     const DEFAULT_FILES = {
       dim: "dim_org_unit.csv",
@@ -724,6 +942,7 @@
     const startYear = document.getElementById("startYear");
     const endYear = document.getElementById("endYear");
     const searchBox = document.getElementById("searchBox");
+    const openEditorBtn = document.getElementById("openEditorBtn");
     const resetBtn = document.getElementById("resetBtn");
     const canvasWrap = document.getElementById("canvasWrap");
     const flowContent = document.getElementById("flowContent");
@@ -734,17 +953,46 @@
     const empty = document.getElementById("empty");
     const tooltip = document.getElementById("tooltip");
     const detailPanel = document.getElementById("detailPanel");
+    const editorModal = document.getElementById("editorModal");
+    const editorForm = document.getElementById("editorForm");
+    const editorYear = document.getElementById("editorYear");
+    const editorType = document.getElementById("editorType");
+    const editorRetainUntil = document.getElementById("editorRetainUntil");
+    const editorNote = document.getElementById("editorNote");
+    const editorCloseBtn = document.getElementById("editorCloseBtn");
+    const editorCancelBtn = document.getElementById("editorCancelBtn");
+    const editorSubmitBtn = document.getElementById("editorSubmitBtn");
+    const editorStatus = document.getElementById("editorStatus");
+    const prevEndpointList = document.getElementById("prevEndpointList");
+    const afterEndpointList = document.getElementById("afterEndpointList");
+    const addPrevEndpointBtn = document.getElementById("addPrevEndpointBtn");
+    const addAfterEndpointBtn = document.getElementById("addAfterEndpointBtn");
+    const prevEndpointHelper = document.getElementById("prevEndpointHelper");
+    const afterEndpointHelper = document.getElementById("afterEndpointHelper");
+    const unitOptionList = document.getElementById("unitOptionList");
 
     startYear.addEventListener("change", render);
     endYear.addEventListener("change", render);
     searchBox.addEventListener("input", applySearch);
+    openEditorBtn.addEventListener("click", openEditorModal);
     resetBtn.addEventListener("click", resetFilters);
+    editorCloseBtn.addEventListener("click", closeEditorModal);
+    editorCancelBtn.addEventListener("click", closeEditorModal);
+    editorType.addEventListener("change", syncEditorTypeHints);
+    addPrevEndpointBtn.addEventListener("click", () => addEndpointRow("prev"));
+    addAfterEndpointBtn.addEventListener("click", () => addEndpointRow("after"));
+    editorForm.addEventListener("submit", submitEditorForm);
     canvasWrap.addEventListener("scroll", syncYearHeader);
     canvas.addEventListener("click", event => {
       if (!event.target.closest(".node") && !event.target.closest(".detail-panel")) {
         state.selectedNodeKey = "";
         hideDetailPanel();
         applySearch();
+      }
+    });
+    editorModal.addEventListener("click", event => {
+      if (event.target === editorModal) {
+        closeEditorModal();
       }
     });
     window.addEventListener("load", bootstrapData);
@@ -803,6 +1051,8 @@
     async function loadData() {
       const { unitText, relationText } = await loadCsvSources();
       ingestData(unitText, relationText);
+      populateUnitOptionList();
+      initializeEditorForm();
       empty.textContent = "조건에 맞는 변경 이력이 없습니다.";
     }
 
@@ -864,6 +1114,194 @@
       startYear.value = state.defaultStartYear;
       endYear.value = state.defaultEndYear;
       render();
+    }
+
+    function populateUnitOptionList() {
+      const units = [...state.units.values()].sort((a, b) => {
+        const typeOrder = { college: 0, department: 1, major: 2 };
+        const typeDiff = (typeOrder[a.type] ?? 9) - (typeOrder[b.type] ?? 9);
+        if (typeDiff) return typeDiff;
+        return `${a.name} ${a.code}`.localeCompare(`${b.name} ${b.code}`, "ko");
+      });
+
+      unitOptionList.innerHTML = units
+        .map(unit => {
+          const path = pathLabel(pathFromUnit(unit.code));
+          return `<option value="${escapeHtml(unit.name)} (${escapeHtml(unit.code)})" label="${escapeHtml(path)}"></option>`;
+        })
+        .join("");
+    }
+
+    function initializeEditorForm() {
+      const years = unique(state.relations.map(row => row.year)).sort((a, b) => a - b);
+      const latestYear = years[years.length - 1] || new Date().getFullYear();
+
+      fillSelect(
+        editorType,
+        Object.keys(CHANGE_TYPE_LABELS).filter(key => key !== "unchanged"),
+        false,
+        CHANGE_TYPE_LABELS
+      );
+
+      editorYear.value = String(latestYear);
+      editorType.value = "renewed";
+      editorRetainUntil.value = "";
+      editorNote.value = "";
+      prevEndpointList.innerHTML = "";
+      afterEndpointList.innerHTML = "";
+      addEndpointRow("prev");
+      addEndpointRow("after");
+      setEditorStatus("", "");
+      syncEditorTypeHints();
+    }
+
+    function openEditorModal() {
+      initializeEditorForm();
+      editorModal.classList.add("is-open");
+      editorModal.setAttribute("aria-hidden", "false");
+      editorYear.focus();
+    }
+
+    function closeEditorModal() {
+      editorModal.classList.remove("is-open");
+      editorModal.setAttribute("aria-hidden", "true");
+      setEditorStatus("", "");
+    }
+
+    function addEndpointRow(side, initialValue = "") {
+      const list = side === "prev" ? prevEndpointList : afterEndpointList;
+      const row = document.createElement("div");
+      row.className = "endpoint-row";
+      row.dataset.side = side;
+      row.dataset.rowId = `${side}-${++state.editorEndpointSeed}`;
+      row.innerHTML = `
+        <input class="endpoint-input" type="text" list="unitOptionList" placeholder="학과명 또는 코드 선택" value="${escapeHtml(initialValue)}">
+        <button class="endpoint-remove" type="button" aria-label="${side === "prev" ? "이전" : "이후"} 편제 삭제">삭제</button>
+      `;
+
+      row.querySelector(".endpoint-remove").addEventListener("click", () => {
+        row.remove();
+        syncEditorTypeHints();
+      });
+
+      list.appendChild(row);
+      syncEditorTypeHints();
+    }
+
+    function ensureEndpointRows(side, minimum) {
+      const list = side === "prev" ? prevEndpointList : afterEndpointList;
+      while (list.children.length < minimum) {
+        addEndpointRow(side);
+      }
+    }
+
+    function syncEditorTypeHints() {
+      const type = editorType.value;
+      const rules = {
+        created: { prev: 0, after: 1, prevText: "이전 편제는 비워둘 수 있습니다.", afterText: "이후 편제는 1개 이상 필요합니다." },
+        closed: { prev: 1, after: 0, prevText: "이전 편제는 1개 이상 필요합니다.", afterText: "이후 편제는 비워둘 수 있습니다." },
+        revised: { prev: 1, after: 1, prevText: "이전 편제는 1개 이상 필요합니다.", afterText: "이후 편제는 1개 이상 필요합니다." },
+        renewed: { prev: 1, after: 1, prevText: "이전 편제는 1개 이상 필요합니다.", afterText: "이후 편제는 1개 이상 필요합니다." },
+        merged: { prev: 1, after: 1, prevText: "이전 편제는 보통 여러 개를 넣습니다.", afterText: "이후 편제는 1개 이상 필요합니다." },
+        splitted: { prev: 1, after: 1, prevText: "이전 편제는 1개 이상 필요합니다.", afterText: "이후 편제는 보통 여러 개를 넣습니다." }
+      }[type] || { prev: 1, after: 1, prevText: "", afterText: "" };
+
+      ensureEndpointRows("prev", rules.prev);
+      ensureEndpointRows("after", rules.after);
+      prevEndpointHelper.textContent = rules.prevText;
+      afterEndpointHelper.textContent = rules.afterText;
+    }
+
+    function setEditorStatus(message, tone = "") {
+      editorStatus.textContent = message;
+      if (tone) {
+        editorStatus.dataset.tone = tone;
+      } else {
+        delete editorStatus.dataset.tone;
+      }
+    }
+
+    function setEditorSubmitting(isSubmitting) {
+      editorSubmitBtn.disabled = isSubmitting;
+      editorCloseBtn.disabled = isSubmitting;
+      editorCancelBtn.disabled = isSubmitting;
+      addPrevEndpointBtn.disabled = isSubmitting;
+      addAfterEndpointBtn.disabled = isSubmitting;
+      editorForm.querySelectorAll("input, select, button").forEach(element => {
+        if (element === editorSubmitBtn || element === editorCloseBtn || element === editorCancelBtn || element === addPrevEndpointBtn || element === addAfterEndpointBtn) {
+          return;
+        }
+        element.disabled = isSubmitting;
+      });
+    }
+
+    function resolveUnitCode(inputValue) {
+      const text = clean(inputValue);
+      if (!text) return "";
+      if (state.units.has(text)) return text;
+
+      const codeMatch = text.match(/\(([^()]+)\)\s*$/);
+      if (codeMatch && state.units.has(codeMatch[1])) {
+        return codeMatch[1];
+      }
+
+      const exactNameMatches = [...state.units.values()].filter(unit => unit.name === text);
+      if (exactNameMatches.length === 1) {
+        return exactNameMatches[0].code;
+      }
+
+      return "";
+    }
+
+    function collectEndpointCodes(side) {
+      const list = side === "prev" ? prevEndpointList : afterEndpointList;
+      const values = [...list.querySelectorAll(".endpoint-input")]
+        .map(input => ({ raw: clean(input.value), code: resolveUnitCode(input.value) }))
+        .filter(item => item.raw || item.code);
+
+      const invalid = values.filter(item => item.raw && !item.code).map(item => item.raw);
+      if (invalid.length) {
+        throw new Error(`${side === "prev" ? "이전" : "이후"} 편제에서 선택되지 않은 항목이 있습니다: ${invalid.join(", ")}`);
+      }
+
+      return unique(values.map(item => item.code));
+    }
+
+    async function submitEditorForm(event) {
+      event.preventDefault();
+
+      try {
+        setEditorSubmitting(true);
+        setEditorStatus("저장 중입니다...", "");
+
+        const payload = {
+          changeYear: Number(editorYear.value),
+          changeType: editorType.value,
+          retainUntilGradYear: clean(editorRetainUntil.value),
+          note: clean(editorNote.value),
+          prevUnitCodes: collectEndpointCodes("prev"),
+          afterUnitCodes: collectEndpointCodes("after")
+        };
+
+        const response = await fetch("/api/relations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json; charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || "저장에 실패했습니다.");
+        }
+
+        setEditorStatus("저장되었습니다. 화면을 다시 불러오는 중입니다.", "success");
+        await loadData();
+        closeEditorModal();
+      } catch (error) {
+        setEditorStatus(error.message || "저장에 실패했습니다.", "error");
+      } finally {
+        setEditorSubmitting(false);
+      }
     }
 
     function parseCsv(text) {
