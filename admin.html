@@ -8,22 +8,21 @@
     @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css");
 
     :root {
-      --ink: #161513;
-      --ink-soft: #3d392f;
-      --muted: #6e665b;
-      --line: #ddd7cf;
+      --ink: #171410;
+      --ink-soft: #443d35;
+      --muted: #6f655b;
+      --line: #ddd6cd;
       --panel: #ffffff;
-      --paper: #f5f2ee;
-      --soft: #faf8f5;
-      --accent: #0b67c2;
+      --paper: #f6f2ec;
+      --soft: #fbf8f4;
+      --accent: #0a67c2;
       --accent-soft: #edf4fb;
-      --danger: #b63a3a;
+      --danger: #ba3f3f;
       --danger-soft: #fbefef;
-      --success: #117847;
+      --success: #17754b;
       --success-soft: #eef8f2;
-      --shadow: 0 18px 50px rgba(18, 17, 14, 0.06);
+      --shadow: 0 18px 48px rgba(18, 16, 12, 0.06);
       --page-width: 1440px;
-      --radius: 8px;
     }
 
     * { box-sizing: border-box; }
@@ -33,8 +32,8 @@
       font-family: "Pretendard Variable", "Pretendard", "Segoe UI", "Malgun Gothic", sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at top left, rgba(11, 103, 194, 0.08), transparent 26%),
-        linear-gradient(180deg, #f8f5f1 0%, #f4f1ec 100%);
+        radial-gradient(circle at top left, rgba(10, 103, 194, 0.08), transparent 24%),
+        linear-gradient(180deg, #f9f6f2 0%, #f3efe9 100%);
     }
 
     a {
@@ -44,36 +43,8 @@
 
     button,
     input,
-    select,
-    textarea {
+    select {
       font: inherit;
-    }
-
-    button,
-    .ghost-link,
-    .mode-button {
-      min-height: 38px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--panel);
-      color: var(--ink);
-      cursor: pointer;
-    }
-
-    button.primary {
-      border-color: var(--accent);
-      background: var(--accent);
-      color: #fff;
-      font-weight: 700;
-    }
-
-    button.subtle {
-      background: var(--soft);
-    }
-
-    button:disabled {
-      cursor: not-allowed;
-      opacity: 0.55;
     }
 
     .page-header {
@@ -81,7 +52,7 @@
       top: 0;
       z-index: 20;
       border-bottom: 1px solid var(--line);
-      background: rgba(245, 242, 238, 0.92);
+      background: rgba(246, 242, 236, 0.92);
       backdrop-filter: blur(14px);
     }
 
@@ -108,7 +79,7 @@
       color: var(--muted);
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
@@ -124,19 +95,43 @@
       line-height: 1.5;
     }
 
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
+    .header-link,
+    button,
+    .year-chip {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
     }
 
-    .ghost-link {
+    .header-link {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       padding: 0 14px;
       white-space: nowrap;
+    }
+
+    button {
+      padding: 0 14px;
+      cursor: pointer;
+    }
+
+    button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    button.subtle {
+      background: var(--soft);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
     }
 
     .page-shell {
@@ -145,7 +140,7 @@
 
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.9fr);
+      grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.92fr);
       gap: 18px;
       align-items: start;
     }
@@ -158,7 +153,7 @@
 
     .panel {
       border: 1px solid var(--line);
-      border-radius: var(--radius);
+      border-radius: 8px;
       background: rgba(255, 255, 255, 0.94);
       box-shadow: var(--shadow);
       overflow: hidden;
@@ -192,14 +187,44 @@
       padding: 18px 20px 20px;
     }
 
-    .field-grid {
+    .steps {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
     }
 
-    .field-grid.columns-3 {
+    .step-card {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      display: grid;
+      gap: 6px;
+    }
+
+    .step-index {
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .step-title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .step-copy {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .field-grid {
+      display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
     }
 
     .field {
@@ -219,8 +244,7 @@
     }
 
     input,
-    select,
-    textarea {
+    select {
       width: 100%;
       min-height: 40px;
       padding: 9px 12px;
@@ -230,52 +254,29 @@
       color: var(--ink);
     }
 
-    textarea {
-      min-height: 88px;
-      resize: vertical;
-    }
-
-    .mode-switch {
-      display: inline-flex;
-      padding: 4px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: var(--soft);
-      gap: 4px;
-    }
-
-    .mode-button {
-      min-height: 34px;
-      padding: 0 14px;
-      border-radius: 999px;
-      border-color: transparent;
-      background: transparent;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .mode-button.is-active {
-      background: #fff;
-      border-color: #d8d1c7;
-      color: var(--ink);
-      box-shadow: 0 2px 8px rgba(18, 17, 14, 0.06);
-    }
-
-    .event-summary {
+    .year-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
       padding: 14px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--soft);
-      display: grid;
-      gap: 6px;
-      font-size: 13px;
+      color: var(--muted);
+      font-size: 12px;
       line-height: 1.5;
     }
 
-    .stack {
-      display: grid;
-      gap: 12px;
+    .year-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #fff;
+      white-space: nowrap;
     }
 
     .endpoint-grid {
@@ -312,16 +313,11 @@
       line-height: 1.45;
     }
 
-    .search-box {
-      display: grid;
-      gap: 8px;
-    }
-
+    .search-box,
     .search-results,
     .selected-list,
-    .recent-list,
     .preview-list,
-    .error-list {
+    .recent-list {
       display: grid;
       gap: 8px;
     }
@@ -333,8 +329,8 @@
 
     .search-item,
     .selected-item,
-    .recent-item,
-    .preview-item {
+    .preview-item,
+    .recent-item {
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
@@ -342,7 +338,9 @@
       min-width: 0;
     }
 
-    .search-item {
+    .search-item,
+    .selected-item,
+    .recent-item {
       display: grid;
       gap: 8px;
     }
@@ -402,11 +400,6 @@
       color: #b96800;
     }
 
-    .badge.direction {
-      min-width: 64px;
-      background: var(--ink);
-    }
-
     .path {
       color: var(--muted);
       font-size: 12px;
@@ -415,14 +408,7 @@
       overflow-wrap: anywhere;
     }
 
-    .selected-item {
-      display: grid;
-      gap: 8px;
-    }
-
-    .selected-empty,
-    .recent-empty,
-    .search-empty {
+    .empty {
       padding: 12px;
       border: 1px dashed var(--line);
       border-radius: 8px;
@@ -441,7 +427,6 @@
       padding: 14px;
       border-radius: 8px;
       background: var(--accent-soft);
-      color: var(--ink);
       font-size: 14px;
       font-weight: 700;
       line-height: 1.6;
@@ -455,24 +440,32 @@
       line-height: 1.55;
     }
 
-    .status-box,
-    .error-box {
+    .preview-copy,
+    .recent-copy {
+      font-size: 13px;
+      line-height: 1.55;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
+    .error-box,
+    .status-box {
       padding: 12px 14px;
       border-radius: 8px;
       font-size: 12px;
       line-height: 1.55;
     }
 
-    .status-box {
-      border: 1px solid #cfe6d7;
-      background: var(--success-soft);
-      color: var(--success);
-    }
-
     .error-box {
       border: 1px solid #efcccc;
       background: var(--danger-soft);
       color: var(--danger);
+    }
+
+    .status-box {
+      border: 1px solid #d0e8d9;
+      background: var(--success-soft);
+      color: var(--success);
     }
 
     .actions {
@@ -495,24 +488,6 @@
       flex-wrap: wrap;
     }
 
-    .recent-item {
-      display: grid;
-      gap: 8px;
-    }
-
-    .recent-copy,
-    .preview-copy {
-      font-size: 13px;
-      line-height: 1.55;
-      word-break: keep-all;
-      overflow-wrap: anywhere;
-    }
-
-    .preview-copy {
-      display: grid;
-      gap: 6px;
-    }
-
     .hidden {
       display: none !important;
     }
@@ -529,24 +504,14 @@
         width: min(calc(100% - 24px), var(--page-width));
       }
 
-      .header-shell,
-      .panel-head,
-      .actions {
-        align-items: start;
-      }
-
+      .steps,
       .field-grid,
-      .field-grid.columns-3,
       .endpoint-grid {
         grid-template-columns: 1fr;
       }
 
-      .header-actions,
-      .action-buttons {
-        width: 100%;
-      }
-
-      .ghost-link,
+      .action-buttons,
+      .header-link,
       button.primary,
       button.subtle {
         width: 100%;
@@ -560,11 +525,9 @@
       <div class="brand">
         <div class="eyebrow">Admin Workbench</div>
         <h1>편제개편 입력</h1>
-        <div class="header-copy">이벤트를 고르고, 전년도와 다음연도 편제단위를 묶어서 저장하기 전에 결과를 먼저 검토합니다.</div>
+        <div class="header-copy">변경 학년도를 고르고, 변경 전 학과(전공)와 변경 후 학과(전공)를 연결합니다.</div>
       </div>
-      <div class="header-actions">
-        <a class="ghost-link" href="/index.html">흐름 보기로 돌아가기</a>
-      </div>
+      <a class="header-link" href="/index.html">흐름 보기로 돌아가기</a>
     </div>
   </header>
 
@@ -574,48 +537,26 @@
         <section class="panel">
           <div class="panel-head">
             <div>
-              <h2 class="panel-title">변경 이벤트</h2>
-              <div class="panel-subtitle">기존 이벤트에 관계를 추가하거나, 같은 학년도 안에서도 별도 이벤트를 새로 만들 수 있습니다.</div>
+              <h2 class="panel-title">입력 순서</h2>
+              <div class="panel-subtitle">이 화면에서는 학년도별 묶음을 따로 만들지 않습니다. 변경 학년도를 고르면 바로 관계를 저장합니다.</div>
             </div>
           </div>
           <div class="panel-body">
-            <div class="mode-switch" role="tablist" aria-label="이벤트 모드">
-              <button class="mode-button is-active" id="existingModeBtn" type="button">기존 이벤트에 추가</button>
-              <button class="mode-button" id="newModeBtn" type="button">새 이벤트 만들기</button>
-            </div>
-
-            <div class="stack" id="existingEventSection">
-              <div class="field">
-                <label class="label" for="eventSelect">이벤트 선택</label>
-                <select id="eventSelect"></select>
+            <div class="steps">
+              <div class="step-card">
+                <div class="step-index">Step 1</div>
+                <div class="step-title">변경 학년도 선택</div>
+                <div class="step-copy">이 관계가 속하는 편제개편 학년도를 정합니다.</div>
               </div>
-              <div class="event-summary" id="eventSummary"></div>
-            </div>
-
-            <div class="stack hidden" id="newEventSection">
-              <div class="field-grid">
-                <div class="field">
-                  <label class="label" for="eventYear">변경 학년도</label>
-                  <input id="eventYear" type="number" min="1900" step="1">
-                </div>
-                <div class="field">
-                  <label class="label" for="eventTitle">이벤트 제목</label>
-                  <input id="eventTitle" type="text" placeholder="예: 2027학년도 편제개편">
-                </div>
+              <div class="step-card">
+                <div class="step-index">Step 2</div>
+                <div class="step-title">전후 단위 선택</div>
+                <div class="step-copy">변경 전 학과(전공)와 변경 후 학과(전공)를 선택합니다.</div>
               </div>
-              <div class="field-grid">
-                <div class="field">
-                  <label class="label" for="eventRevisionDate">학칙 개정일</label>
-                  <input id="eventRevisionDate" type="date">
-                </div>
-                <div class="field">
-                  <label class="label" for="eventNote">내부 메모</label>
-                  <input id="eventNote" type="text" placeholder="이벤트 수준 메모">
-                </div>
-              </div>
-              <div class="field wide">
-                <label class="label" for="eventSourceText">근거 문구</label>
-                <textarea id="eventSourceText" placeholder="학칙 문구나 내부 정리 문장을 붙여넣습니다."></textarea>
+              <div class="step-card">
+                <div class="step-index">Step 3</div>
+                <div class="step-title">미리보기 확인 후 저장</div>
+                <div class="step-copy">저장 문장과 CSV 행 확장 수를 보고 저장합니다.</div>
               </div>
             </div>
           </div>
@@ -624,12 +565,16 @@
         <section class="panel">
           <div class="panel-head">
             <div>
-              <h2 class="panel-title">변경 관계 입력</h2>
-              <div class="panel-subtitle">관계 한 건을 기준으로 입력합니다. 여러 갈래로 갈라지거나 합쳐지는 경우에는 행 확장 수가 미리 표시됩니다.</div>
+              <h2 class="panel-title">기본 정보</h2>
+              <div class="panel-subtitle">현재 구조에서는 별도 이벤트 개념 없이 변경 학년도가 관계 묶음 역할을 합니다.</div>
             </div>
           </div>
           <div class="panel-body">
-            <div class="field-grid columns-3">
+            <div class="field-grid">
+              <div class="field">
+                <label class="label" for="changeYear">변경 학년도</label>
+                <input id="changeYear" type="number" min="1900" step="1" placeholder="예: 2027">
+              </div>
               <div class="field">
                 <label class="label" for="changeType">변경 유형</label>
                 <select id="changeType"></select>
@@ -638,17 +583,28 @@
                 <label class="label" for="retainUntil">유지 학년도</label>
                 <input id="retainUntil" type="number" min="1900" step="1" placeholder="없으면 비움">
               </div>
-              <div class="field">
+              <div class="field wide">
                 <label class="label" for="relationNote">관계 메모</label>
-                <input id="relationNote" type="text" placeholder="관계 수준 메모">
+                <input id="relationNote" type="text" placeholder="필요한 경우에만 입력">
               </div>
             </div>
+            <div class="year-summary" id="yearSummary"></div>
+          </div>
+        </section>
 
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">변경 관계</h2>
+              <div class="panel-subtitle">검색은 코드, 명칭, 소속 경로 기준으로 동작합니다.</div>
+            </div>
+          </div>
+          <div class="panel-body">
             <div class="endpoint-grid">
               <section class="endpoint-panel">
                 <div class="endpoint-head">
-                  <div class="endpoint-title">전년도</div>
-                  <span class="badge direction">전년도</span>
+                  <div class="endpoint-title">변경 전 학과(전공)</div>
+                  <span class="badge">전년도</span>
                 </div>
                 <div class="endpoint-helper" id="prevHelper"></div>
                 <div class="search-box">
@@ -660,8 +616,8 @@
 
               <section class="endpoint-panel">
                 <div class="endpoint-head">
-                  <div class="endpoint-title">다음연도</div>
-                  <span class="badge direction">다음연도</span>
+                  <div class="endpoint-title">변경 후 학과(전공)</div>
+                  <span class="badge">다음연도</span>
                 </div>
                 <div class="endpoint-helper" id="afterHelper"></div>
                 <div class="search-box">
@@ -680,22 +636,22 @@
           <div class="panel-head">
             <div>
               <h2 class="panel-title">저장 전 검토</h2>
-              <div class="panel-subtitle">저장 전에 문장, 저장 경로, CSV 확장 수를 함께 확인합니다.</div>
+              <div class="panel-subtitle">저장 문장, 연도, CSV 행 확장 수를 함께 확인합니다.</div>
             </div>
           </div>
           <div class="panel-body">
             <div class="preview-card">
-              <div class="preview-sentence" id="previewSentence">이벤트와 관계를 선택하면 여기에 저장 문장이 나타납니다.</div>
+              <div class="preview-sentence" id="previewSentence">변경 학년도와 관계를 선택하면 저장 문장이 여기에 나타납니다.</div>
               <div class="preview-meta" id="previewMeta"></div>
               <div class="preview-list" id="previewList"></div>
             </div>
             <div class="error-box hidden" id="errorBox"></div>
             <div class="status-box hidden" id="statusBox"></div>
             <div class="actions">
-              <div class="action-copy">저장 후에는 현재 이벤트를 유지한 채 다음 관계를 바로 이어서 입력할 수 있습니다.</div>
+              <div class="action-copy">저장 후에는 같은 학년도를 유지한 채 다음 관계를 이어서 입력할 수 있습니다.</div>
               <div class="action-buttons">
                 <button class="subtle" id="resetRelationBtn" type="button">관계만 초기화</button>
-                <button class="primary" id="saveBtn" type="button">저장</button>
+                <button class="primary" id="saveBtn" type="button">관계 저장</button>
               </div>
             </div>
           </div>
@@ -705,7 +661,7 @@
           <div class="panel-head">
             <div>
               <h2 class="panel-title">최근 입력</h2>
-              <div class="panel-subtitle">최근 저장된 관계를 빠르게 확인합니다.</div>
+              <div class="panel-subtitle">최근 저장된 관계를 연도 단위 기준으로 빠르게 확인합니다.</div>
             </div>
           </div>
           <div class="panel-body">
@@ -723,24 +679,14 @@
       unitsByCode: new Map(),
       selectedPrev: [],
       selectedAfter: [],
-      eventMode: 'existing',
       isSubmitting: false,
     };
 
+    const changeYear = document.getElementById('changeYear');
     const changeType = document.getElementById('changeType');
     const retainUntil = document.getElementById('retainUntil');
     const relationNote = document.getElementById('relationNote');
-    const existingModeBtn = document.getElementById('existingModeBtn');
-    const newModeBtn = document.getElementById('newModeBtn');
-    const existingEventSection = document.getElementById('existingEventSection');
-    const newEventSection = document.getElementById('newEventSection');
-    const eventSelect = document.getElementById('eventSelect');
-    const eventSummary = document.getElementById('eventSummary');
-    const eventYear = document.getElementById('eventYear');
-    const eventTitle = document.getElementById('eventTitle');
-    const eventRevisionDate = document.getElementById('eventRevisionDate');
-    const eventNote = document.getElementById('eventNote');
-    const eventSourceText = document.getElementById('eventSourceText');
+    const yearSummary = document.getElementById('yearSummary');
     const prevSearch = document.getElementById('prevSearch');
     const afterSearch = document.getElementById('afterSearch');
     const prevResults = document.getElementById('prevResults');
@@ -758,10 +704,8 @@
     const saveBtn = document.getElementById('saveBtn');
     const recentList = document.getElementById('recentList');
 
-    existingModeBtn.addEventListener('click', () => setEventMode('existing'));
-    newModeBtn.addEventListener('click', () => setEventMode('new'));
-    eventSelect.addEventListener('change', () => {
-      renderEventSummary();
+    changeYear.addEventListener('input', () => {
+      renderYearSummary();
       renderPreview();
     });
     changeType.addEventListener('change', () => {
@@ -770,11 +714,6 @@
     });
     retainUntil.addEventListener('input', renderPreview);
     relationNote.addEventListener('input', renderPreview);
-    eventYear.addEventListener('input', handleYearInput);
-    eventTitle.addEventListener('input', renderPreview);
-    eventRevisionDate.addEventListener('input', renderPreview);
-    eventNote.addEventListener('input', renderPreview);
-    eventSourceText.addEventListener('input', renderPreview);
     prevSearch.addEventListener('input', () => renderSearchResults('prev'));
     afterSearch.addEventListener('input', () => renderSearchResults('after'));
     resetRelationBtn.addEventListener('click', resetRelationForm);
@@ -793,7 +732,6 @@
         state.units = payload.units || [];
         state.unitsByCode = new Map(state.units.map(unit => [unit.unitCode, unit]));
         fillChangeTypes();
-        fillEvents();
         initializeDefaults();
         renderAll();
       } catch (error) {
@@ -808,24 +746,15 @@
         .join('');
     }
 
-    function fillEvents() {
-      eventSelect.innerHTML = (state.bootstrap.events || [])
-        .map(event => `<option value="${event.eventId}">${escapeHtml(event.displayLabel)}</option>`)
-        .join('');
-    }
-
     function initializeDefaults() {
-      const latestYear = Math.max(...(state.bootstrap.years || [new Date().getFullYear()]));
-      eventYear.value = String(Number.isFinite(latestYear) ? latestYear : new Date().getFullYear());
-      eventTitle.value = `${eventYear.value}학년도 편제개편`;
+      const years = state.bootstrap.years || [];
+      const latestYear = years.length ? years[years.length - 1] : new Date().getFullYear();
+      changeYear.value = String(latestYear);
       changeType.value = 'renewed';
-      if ((state.bootstrap.events || []).length) {
-        eventSelect.value = String(state.bootstrap.events[0].eventId);
-      }
     }
 
     function renderAll() {
-      renderEventSummary();
+      renderYearSummary();
       syncTypeGuidance();
       renderSearchResults('prev');
       renderSearchResults('after');
@@ -835,29 +764,18 @@
       renderRecent();
     }
 
-    function setEventMode(mode) {
-      state.eventMode = mode;
-      existingModeBtn.classList.toggle('is-active', mode === 'existing');
-      newModeBtn.classList.toggle('is-active', mode === 'new');
-      existingEventSection.classList.toggle('hidden', mode !== 'existing');
-      newEventSection.classList.toggle('hidden', mode !== 'new');
-      renderPreview();
-    }
-
-    function renderEventSummary() {
-      const event = currentExistingEvent();
-      if (!event) {
-        eventSummary.innerHTML = '선택 가능한 이벤트가 없습니다.';
+    function renderYearSummary() {
+      const year = clean(changeYear.value);
+      if (!year) {
+        yearSummary.innerHTML = '변경 학년도를 입력하면 해당 연도에 이미 저장된 관계 수를 보여줍니다.';
         return;
       }
 
-      const note = event.note ? `<div>메모: ${escapeHtml(event.note)}</div>` : '';
-      const revision = event.ruleRevisionDate ? `<div>학칙 개정일: ${escapeHtml(event.ruleRevisionDate)}</div>` : '';
-      eventSummary.innerHTML = `
-        <div><strong>${escapeHtml(event.displayLabel)}</strong></div>
-        <div>현재 연결 관계 ${escapeHtml(String(event.relationCount))}건</div>
-        ${revision}
-        ${note}
+      const count = state.bootstrap?.relationCountsByYear?.[year] || 0;
+      const exists = Number(count) > 0;
+      yearSummary.innerHTML = `
+        <span class="year-chip">${escapeHtml(year)}학년도</span>
+        <span>${exists ? `이미 저장된 관계 ${count}건` : '아직 저장된 관계 없음'}</span>
       `;
     }
 
@@ -865,12 +783,12 @@
       const type = changeType.value;
       const rules = {
         created: {
-          prev: '전년도 단위는 비워 둡니다. 다음연도 단위를 하나 이상 선택합니다.',
+          prev: '변경 전 단위는 비워 둡니다. 변경 후 학과(전공)를 하나 이상 선택합니다.',
           after: '신설되는 학과(전공)를 선택합니다.'
         },
         closed: {
-          prev: '종료되는 전년도 단위를 하나 이상 선택합니다.',
-          after: '다음연도 단위는 비워 둡니다.'
+          prev: '종료되는 학과(전공)를 하나 이상 선택합니다.',
+          after: '변경 후 단위는 비워 둡니다.'
         },
         merged: {
           prev: '통합 전 단위를 여러 개 선택할 수 있습니다.',
@@ -881,26 +799,17 @@
           after: '분리 후 단위를 여러 개 선택할 수 있습니다.'
         },
         revised: {
-          prev: '이전 단위를 선택합니다.',
-          after: '변경 후 단위를 선택합니다.'
+          prev: '명칭이 바뀌기 전 단위를 선택합니다.',
+          after: '명칭이 바뀐 후 단위를 선택합니다.'
         },
         renewed: {
-          prev: '이전 단위를 선택합니다.',
+          prev: '개편 전 단위를 선택합니다.',
           after: '개편 후 단위를 선택합니다.'
         }
       }[type] || { prev: '', after: '' };
 
       prevHelper.textContent = rules.prev;
       afterHelper.textContent = rules.after;
-    }
-
-    function handleYearInput() {
-      const value = clean(eventTitle.value);
-      const generated = /^\d{4}학년도 편제개편$/.test(value) || value === '';
-      if (generated) {
-        eventTitle.value = `${clean(eventYear.value) || new Date().getFullYear()}학년도 편제개편`;
-      }
-      renderPreview();
     }
 
     function renderSearchResults(side) {
@@ -917,13 +826,13 @@
         .slice(0, 10);
 
       if (!matches.length) {
-        container.innerHTML = `<div class="search-empty">${query ? '검색 결과가 없습니다.' : '검색어를 입력하거나 아래 결과에서 선택합니다.'}</div>`;
+        container.innerHTML = `<div class="empty">${query ? '검색 결과가 없습니다.' : '검색어를 입력하거나 아래 결과에서 선택합니다.'}</div>`;
         return;
       }
 
       container.innerHTML = matches.map(unit => {
         const tempBadge = unit.isTempCode ? '<span class="badge warn">임시코드</span>' : '';
-        const overlapText = oppositeCodes.has(unit.unitCode)
+        const overlapBadge = oppositeCodes.has(unit.unitCode)
           ? '<span class="badge soft">반대편에 이미 선택됨</span>'
           : '';
         return `
@@ -936,7 +845,7 @@
               <span class="badge soft">${escapeHtml(unit.unitTypeLabel)}</span>
               <span>${escapeHtml(unit.unitCode)}</span>
               ${tempBadge}
-              ${overlapText}
+              ${overlapBadge}
             </div>
             <div class="path">${escapeHtml(unit.path)}</div>
           </div>
@@ -974,7 +883,7 @@
       const selectedCodes = side === 'prev' ? state.selectedPrev : state.selectedAfter;
 
       if (!selectedCodes.length) {
-        container.innerHTML = `<div class="selected-empty">${side === 'prev' ? '전년도 선택 없음' : '다음연도 선택 없음'}</div>`;
+        container.innerHTML = `<div class="empty">${side === 'prev' ? '변경 전 선택 없음' : '변경 후 선택 없음'}</div>`;
         return;
       }
 
@@ -1009,7 +918,7 @@
       previewList.innerHTML = preview.lines.map(line => `<div class="preview-item"><div class="preview-copy">${escapeHtml(line)}</div></div>`).join('');
 
       if (preview.errors.length) {
-        errorBox.innerHTML = `<div><strong>저장 전 확인 필요</strong></div><div class="error-list">${preview.errors.map(item => `<div>${escapeHtml(item)}</div>`).join('')}</div>`;
+        errorBox.innerHTML = preview.errors.map(text => `<div>${escapeHtml(text)}</div>`).join('');
         errorBox.classList.remove('hidden');
       } else {
         errorBox.classList.add('hidden');
@@ -1022,6 +931,7 @@
     }
 
     function buildPreview() {
+      const year = clean(changeYear.value);
       const type = changeType.value;
       const prev = state.selectedPrev.map(code => state.unitsByCode.get(code)).filter(Boolean);
       const after = state.selectedAfter.map(code => state.unitsByCode.get(code)).filter(Boolean);
@@ -1032,42 +942,33 @@
         revised: { minPrev: 1, minAfter: 1 },
         renewed: { minPrev: 1, minAfter: 1 },
         merged: { minPrev: 1, minAfter: 1 },
-        splitted: { minPrev: 1, minAfter: 1 },
+        splitted: { minPrev: 1, minAfter: 1 }
       }[type] || { minPrev: 1, minAfter: 1 };
 
+      if (!/^\d+$/.test(year)) {
+        errors.push('변경 학년도를 입력해 주세요.');
+      }
       if (prev.length < rules.minPrev) {
-        errors.push('전년도 선택 수가 변경 유형 조건에 맞지 않습니다.');
+        errors.push('변경 전 학과(전공) 선택 수가 변경 유형 조건에 맞지 않습니다.');
       }
       if (after.length < rules.minAfter) {
-        errors.push('다음연도 선택 수가 변경 유형 조건에 맞지 않습니다.');
+        errors.push('변경 후 학과(전공) 선택 수가 변경 유형 조건에 맞지 않습니다.');
       }
+
       const overlap = prev.find(unit => after.some(other => other.unitCode === unit.unitCode));
       if (overlap) {
-        errors.push(`같은 편제단위가 전년도와 다음연도에 동시에 들어갈 수 없습니다: ${overlap.unitName}`);
+        errors.push(`같은 편제단위가 변경 전과 변경 후에 동시에 들어갈 수 없습니다: ${overlap.unitName}`);
       }
       if (prev.length > 1 && after.length > 1) {
-        errors.push('전년도 여러 건과 다음연도 여러 건을 한 번에 저장하는 관계는 v1에서 지원하지 않습니다. 여러 건으로 나눠 입력해 주세요.');
-      }
-      if (state.eventMode === 'existing' && !currentExistingEvent()) {
-        errors.push('기존 이벤트를 선택해 주세요.');
-      }
-      if (state.eventMode === 'new') {
-        if (!/^\d+$/.test(clean(eventYear.value))) {
-          errors.push('새 이벤트의 변경 학년도를 입력해 주세요.');
-        }
+        errors.push('변경 전 여러 건과 변경 후 여러 건을 한 번에 저장하는 관계는 지원하지 않습니다. 여러 건으로 나눠 입력해 주세요.');
       }
 
-      const prevNames = prev.map(unit => displayUnit(unit));
-      const afterNames = after.map(unit => displayUnit(unit));
-      const sentence = sentenceForType(type, prevNames, afterNames);
-      const eventLabel = state.eventMode === 'existing'
-        ? currentExistingEvent()?.displayLabel || '기존 이벤트'
-        : `${clean(eventTitle.value) || `${clean(eventYear.value)}학년도 편제개편`} (${clean(eventYear.value)}학년도)`;
-      const expansionCount = relationExpansionCount(prev.length, after.length);
-      const lines = [];
-      prev.forEach(unit => lines.push(`전년도 · ${unit.unitName} · ${unit.path}`));
-      after.forEach(unit => lines.push(`다음연도 · ${unit.unitName} · ${unit.path}`));
-
+      const sentence = sentenceForType(
+        type,
+        prev.map(displayUnit),
+        after.map(displayUnit)
+      );
+      const count = state.bootstrap?.relationCountsByYear?.[year] || 0;
       const retention = clean(retainUntil.value)
         ? `${clean(retainUntil.value)}학년도 졸업자까지 유지`
         : '유지 학년도 없음';
@@ -1078,20 +979,24 @@
       return {
         sentence,
         meta: [
-          `이벤트: ${eventLabel}`,
+          year ? `변경 학년도: ${year}학년도` : '변경 학년도 미입력',
+          `해당 학년도 기존 관계 수: ${count}건`,
           `변경 유형: ${changeType.selectedOptions[0]?.textContent || ''}`,
-          `CSV 확장 수: ${expansionCount}행`,
+          `CSV 확장 수: ${relationExpansionCount(prev.length, after.length)}행`,
           `유지 기준: ${retention}`,
           ...tempWarnings,
         ],
-        lines,
+        lines: [
+          ...prev.map(unit => `변경 전 · ${unit.unitName} · ${unit.path}`),
+          ...after.map(unit => `변경 후 · ${unit.unitName} · ${unit.path}`),
+        ],
         errors,
       };
     }
 
     function sentenceForType(type, prevNames, afterNames) {
-      const prevText = prevNames.join(', ') || '전년도 단위';
-      const afterText = afterNames.join(', ') || '다음연도 단위';
+      const prevText = prevNames.join(', ') || '변경 전 단위';
+      const afterText = afterNames.join(', ') || '변경 후 단위';
 
       switch (type) {
         case 'created':
@@ -1114,22 +1019,24 @@
     function renderRecent() {
       const items = state.bootstrap?.recentRelations || [];
       if (!items.length) {
-        recentList.innerHTML = '<div class="recent-empty">최근 입력이 없습니다.</div>';
+        recentList.innerHTML = '<div class="empty">최근 입력이 없습니다.</div>';
         return;
       }
 
       recentList.innerHTML = items.map(item => {
         const prevText = item.prev.map(displayUnit).join(', ') || '없음';
         const afterText = item.after.map(displayUnit).join(', ') || '없음';
-        const retain = item.retainUntilGradYear ? `${item.retainUntilGradYear}학년도 졸업자까지 유지` : '유지 기준 없음';
+        const retain = item.retainUntilGradYear
+          ? `${item.retainUntilGradYear}학년도 졸업자까지 유지`
+          : '유지 기준 없음';
         return `
           <div class="recent-item">
             <div class="recent-top">
-              <div class="recent-title">#${item.relationId} · ${escapeHtml(item.eventTitle || `${item.changeYear}학년도 편제개편`)}</div>
+              <div class="recent-title">#${item.relationId} · ${escapeHtml(String(item.changeYear))}학년도</div>
               <span class="badge soft">${escapeHtml(item.changeTypeLabel)}</span>
             </div>
-            <div class="recent-copy">전년도: ${escapeHtml(prevText)}</div>
-            <div class="recent-copy">다음연도: ${escapeHtml(afterText)}</div>
+            <div class="recent-copy">변경 전: ${escapeHtml(prevText)}</div>
+            <div class="recent-copy">변경 후: ${escapeHtml(afterText)}</div>
             <div class="meta-row">
               <span>${escapeHtml(String(item.expansionCount))}행 확장</span>
               <span>${escapeHtml(retain)}</span>
@@ -1142,23 +1049,19 @@
     async function submitRelation() {
       const preview = buildPreview();
       renderPreview();
-      if (preview.errors.length) {
-        return;
-      }
+      if (preview.errors.length) return;
 
       setSubmitting(true);
       hideStatus();
 
       try {
         const payload = {
-          event: buildEventPayload(),
-          relation: {
-            changeType: changeType.value,
-            retainUntilGradYear: clean(retainUntil.value) || null,
-            note: clean(relationNote.value) || null,
-            prevUnitCodes: [...state.selectedPrev],
-            afterUnitCodes: [...state.selectedAfter],
-          },
+          changeYear: Number(clean(changeYear.value)),
+          changeType: changeType.value,
+          retainUntilGradYear: clean(retainUntil.value) || null,
+          note: clean(relationNote.value) || null,
+          prevUnitCodes: [...state.selectedPrev],
+          afterUnitCodes: [...state.selectedAfter],
         };
 
         const response = await fetch('/api/relations', {
@@ -1171,7 +1074,7 @@
           throw new Error(result.error || '저장에 실패했습니다.');
         }
 
-        showStatus(`관계 #${result.relationId} 저장 완료. 현재 이벤트를 유지한 채 다음 관계를 계속 입력할 수 있습니다.`);
+        showStatus(`관계 #${result.relationId} 저장 완료. ${result.changeYear}학년도에 바로 다음 관계를 계속 입력할 수 있습니다.`);
         resetRelationForm();
         await refreshBootstrap();
       } catch (error) {
@@ -1182,40 +1085,21 @@
       }
     }
 
-    function buildEventPayload() {
-      if (state.eventMode === 'existing') {
-        const event = currentExistingEvent();
-        return {
-          eventId: event?.eventId || null,
-        };
-      }
-
-      return {
-        changeYear: Number(clean(eventYear.value)),
-        title: clean(eventTitle.value) || `${clean(eventYear.value)}학년도 편제개편`,
-        ruleRevisionDate: clean(eventRevisionDate.value) || null,
-        sourceText: clean(eventSourceText.value) || null,
-        note: clean(eventNote.value) || null,
-      };
-    }
-
     async function refreshBootstrap() {
       const response = await fetch('/api/admin/bootstrap', { cache: 'no-store' });
       const payload = await response.json();
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || '저장 후 데이터를 새로 불러오지 못했습니다.');
       }
+
       state.bootstrap = payload;
       state.units = payload.units || [];
       state.unitsByCode = new Map(state.units.map(unit => [unit.unitCode, unit]));
-      fillEvents();
-      if (state.eventMode === 'existing' && payload.events.length) {
-        const currentValue = eventSelect.value;
-        const exists = payload.events.some(event => String(event.eventId) === currentValue);
-        eventSelect.value = exists ? currentValue : String(payload.events[0].eventId);
-      }
-      renderEventSummary();
+      renderYearSummary();
       renderRecent();
+      renderSearchResults('prev');
+      renderSearchResults('after');
+      renderPreview();
     }
 
     function resetRelationForm() {
@@ -1223,8 +1107,8 @@
       state.selectedAfter = [];
       prevSearch.value = '';
       afterSearch.value = '';
-      relationNote.value = '';
       retainUntil.value = '';
+      relationNote.value = '';
       changeType.value = 'renewed';
       syncTypeGuidance();
       renderSearchResults('prev');
@@ -1254,10 +1138,6 @@
       errorBox.textContent = '';
     }
 
-    function currentExistingEvent() {
-      return (state.bootstrap?.events || []).find(event => String(event.eventId) === eventSelect.value) || null;
-    }
-
     function displayUnit(unit) {
       if (!unit) return '';
       return unit.unitType === 'major' && unit.departmentCode
@@ -1266,9 +1146,7 @@
     }
 
     function relationExpansionCount(prevCount, afterCount) {
-      if (prevCount > 0 && afterCount > 0) {
-        return prevCount * afterCount;
-      }
+      if (prevCount > 0 && afterCount > 0) return prevCount * afterCount;
       return Math.max(prevCount, afterCount);
     }
 

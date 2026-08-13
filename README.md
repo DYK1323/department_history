@@ -1,16 +1,24 @@
 # department_history
 
-편제변경 흐름 조회 화면과 편제개편 입력용 관리자 화면을 함께 제공하는 정적 웹앱 + 경량 Node 서버입니다.
+편제변경 흐름 조회 화면과 편제개편 입력 관리자 화면을 함께 제공하는 정적 웹앱 + 경량 Node 서버입니다.
 
 ## 포함 파일
 
 - `index.html`: 편제변경 흐름 조회 화면
 - `admin.html`: 편제개편 입력 관리자 화면
 - `server/app.js`: 정적 파일 서빙, SQLite 기반 CSV 호환 응답, 관리자 API
-- `schema.sql`: SQLite 스키마
+- `schema.sql`: 현재 운영 규칙 기준 SQLite 스키마
 - `department_history.sqlite`: 현재 작업용 SQLite DB
 - `dim_org_unit.csv`, `org_unit_relation.csv`: 조회 화면 호환 CSV
 - `scripts/migrate_to_sqlite.js`: CSV -> SQLite 마이그레이션 스크립트
+- `SCHEMA_MIGRATION_PLAN.md`: change_year 중심 구조 설명
+
+## 현재 구조 핵심
+
+- `change_year`가 곧 편제개편 묶음이다.
+- `change_relation`은 개별 변경 관계다.
+- `change_relation_endpoint`는 변경 전/후 편제단위다.
+- 별도 `change_event` 테이블은 사용하지 않는다.
 
 ## 로컬 실행
 
@@ -28,27 +36,42 @@ SQLite DB가 있으면 서버가 `dim_org_unit.csv`, `org_unit_relation.csv` 요
 ## 관리자 API
 
 - `GET /api/admin/bootstrap`
-  - 편제단위 목록, 변경유형 목록, 이벤트 목록, 최근 관계 요약을 반환합니다.
+  - 편제단위 목록, 변경유형 목록, 사용 중인 학년도 목록, 최근 관계 요약을 반환합니다.
 - `POST /api/relations`
-  - 구조화된 `event` + `relation` payload를 받아 저장합니다.
-  - 기존 이벤트에 추가할 때는 `event.eventId`를 사용합니다.
-  - 새 이벤트 생성은 `event.eventId`를 보내지 않고 `event.changeYear`를 포함해서 요청합니다.
+  - `change_year` 기준으로 관계를 직접 저장합니다.
 
 예시:
 
 ```json
 {
-  "event": {
-    "changeYear": 2027,
-    "title": "2027학년도 편제개편"
-  },
-  "relation": {
-    "changeType": "renewed",
-    "prevUnitCodes": ["HAF1000"],
-    "afterUnitCodes": ["HAF1100"]
-  }
+  "changeYear": 2027,
+  "changeType": "renewed",
+  "retainUntilGradYear": null,
+  "note": "선택 메모",
+  "prevUnitCodes": ["HAF1000"],
+  "afterUnitCodes": ["HAF1100"]
 }
 ```
+
+## 기존 CSV에서 무엇이 바뀌는가
+
+핵심 결론:
+
+- 현재 `dim_org_unit.csv`는 그대로 사용한다.
+- 현재 `org_unit_relation.csv`도 그대로 사용한다.
+
+즉, 지금 스키마 재설계만으로는 기존 CSV 컬럼을 반드시 바꿔야 하는 부분이 없다.
+
+다만 나중에 학년도 자체의 메타데이터가 필요하면 별도 구조가 더 필요하다.
+
+예:
+
+- `2027학년도 편제개편` 제목
+- 학칙 개정일
+- 학칙 원문
+- 학년도 전체 메모
+
+이런 정보는 현재 관계 CSV만으로는 자연스럽게 표현되지 않아서, 필요해지면 별도 CSV나 별도 메타 구조를 추가해야 한다.
 
 ## 테스트용 환경변수
 

@@ -3,9 +3,9 @@
   "active": true,
   "skill": "ralplan",
   "keyword": "$ralplan",
-  "phase": "planning",
+  "phase": "executing",
   "activated_at": "2026-08-13T12:48:14.321Z",
-  "updated_at": "2026-08-13T13:07:17.791Z",
+  "updated_at": "2026-08-13T13:18:11.741Z",
   "source": "keyword-detector",
   "input_lock": null
 }

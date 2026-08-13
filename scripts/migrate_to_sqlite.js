@@ -19,15 +19,11 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--out') {
-      if (!argv[i + 1]) {
-        throw new Error('--out requires a path');
-      }
+      if (!argv[i + 1]) throw new Error('--out requires a path');
       options.out = path.resolve(argv[i + 1]);
       i += 1;
     } else if (arg === '--sqlite-bin') {
-      if (!argv[i + 1]) {
-        throw new Error('--sqlite-bin requires a value');
-      }
+      if (!argv[i + 1]) throw new Error('--sqlite-bin requires a value');
       options.sqliteBin = argv[i + 1];
       i += 1;
     } else if (arg === '--help' || arg === '-h') {
@@ -82,7 +78,7 @@ function parseCsv(text) {
     rows.push(row);
   }
 
-  return rows.filter((currentRow) => currentRow.some((cell) => cell !== ''));
+  return rows.filter(currentRow => currentRow.some(cell => cell !== ''));
 }
 
 function readCsv(filePath) {
@@ -90,7 +86,7 @@ function readCsv(filePath) {
   const rows = parseCsv(text);
   const [header, ...dataRows] = rows;
 
-  return dataRows.map((cells) => {
+  return dataRows.map(cells => {
     const record = {};
     for (let i = 0; i < header.length; i += 1) {
       record[header[i]] = (cells[i] || '').trim();
@@ -100,15 +96,8 @@ function readCsv(filePath) {
 }
 
 function sqlValue(value) {
-  if (value === null || value === undefined) {
-    return 'NULL';
-  }
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? String(value) : 'NULL';
-  }
-  if (value === '') {
-    return 'NULL';
-  }
+  if (value === null || value === undefined || value === '') return 'NULL';
+  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : 'NULL';
   return `'${String(value).replace(/'/g, "''")}'`;
 }
 
@@ -125,10 +114,7 @@ function validateUnitPath(record, prefix, unitsByCode) {
   const majorCode = record[`${prefix}_major_code`];
   const unitCode = inferUnitCode(record, prefix);
 
-  if (!unitCode) {
-    return;
-  }
-
+  if (!unitCode) return;
   if (!unitsByCode.has(unitCode)) {
     throw new Error(`${record.relation_id}: ${prefix} unit_code ${unitCode} not found`);
   }
@@ -154,11 +140,7 @@ function validateUnitPath(record, prefix, unitsByCode) {
 }
 
 function buildDataSql(dimRows, relationRows) {
-  const unitsByCode = new Map(dimRows.map((row) => [row.unit_code, row]));
-  const years = [...new Set(relationRows.map((row) => row.change_year).filter(Boolean))]
-    .sort((a, b) => Number(a) - Number(b));
-  const eventIdByYear = new Map(years.map((year, index) => [year, index + 1]));
-
+  const unitsByCode = new Map(dimRows.map(row => [row.unit_code, row]));
   const statements = ['PRAGMA foreign_keys = ON;', 'BEGIN;'];
 
   for (const row of dimRows) {
@@ -177,14 +159,6 @@ function buildDataSql(dimRows, relationRows) {
     );
   }
 
-  for (const year of years) {
-    statements.push(
-      `INSERT INTO change_event (event_id, change_year, title) VALUES (` +
-        `${sqlValue(eventIdByYear.get(year))}, ${sqlValue(Number(year))}, ${sqlValue(`${year}학년도 편제개편`)}` +
-      `);`
-    );
-  }
-
   let endpointId = 1;
   for (const row of relationRows) {
     validateUnitPath(row, 'prev', unitsByCode);
@@ -192,25 +166,20 @@ function buildDataSql(dimRows, relationRows) {
 
     const retainUntil = row.valid_until === '' ? null : Number(row.valid_until);
     const relationId = Number(row.relation_id);
-    const eventId = eventIdByYear.get(row.change_year);
-    if (!eventId) {
-      throw new Error(`relation ${row.relation_id}: missing event for year ${row.change_year}`);
-    }
+    const changeYear = Number(row.change_year);
 
     statements.push(
       `INSERT INTO change_relation (` +
-        `relation_id, event_id, change_type, retain_until_grad_year, note, legacy_relation_id` +
+        `relation_id, change_year, change_type, retain_until_grad_year, note, legacy_relation_id` +
       `) VALUES (` +
-        `${sqlValue(relationId)}, ${sqlValue(eventId)}, ${sqlValue(row.change_type)}, ` +
+        `${sqlValue(relationId)}, ${sqlValue(changeYear)}, ${sqlValue(row.change_type)}, ` +
         `${sqlValue(retainUntil)}, ${sqlValue(row.note)}, ${sqlValue(row.relation_id)}` +
       `);`
     );
 
     for (const side of ['prev', 'after']) {
       const unitCode = inferUnitCode(row, side);
-      if (!unitCode) {
-        continue;
-      }
+      if (!unitCode) continue;
 
       statements.push(
         `INSERT INTO change_relation_endpoint (` +
@@ -230,7 +199,6 @@ function buildDataSql(dimRows, relationRows) {
     sql: statements.join('\n'),
     counts: {
       curriculumUnit: dimRows.length,
-      changeEvent: years.length,
       changeRelation: relationRows.length,
     },
   };
@@ -242,22 +210,15 @@ function runSqlite(sqliteBin, dbPath, sql) {
     encoding: 'utf8',
   });
 
-  if (result.error) {
-    throw result.error;
-  }
+  if (result.error) throw result.error;
   if (result.status !== 0) {
     throw new Error(result.stderr.trim() || `sqlite3 exited with code ${result.status}`);
   }
 }
 
 function runScalar(sqliteBin, dbPath, query) {
-  const result = spawnSync(sqliteBin, [dbPath, query], {
-    encoding: 'utf8',
-  });
-
-  if (result.error) {
-    throw result.error;
-  }
+  const result = spawnSync(sqliteBin, [dbPath, query], { encoding: 'utf8' });
+  if (result.error) throw result.error;
   if (result.status !== 0) {
     throw new Error(result.stderr.trim() || `sqlite3 exited with code ${result.status}`);
   }
@@ -286,12 +247,13 @@ function main() {
   const legacyRowCount = runScalar(options.sqliteBin, options.out, 'SELECT COUNT(*) FROM v_org_unit_relation_legacy;');
   const relationCount = runScalar(options.sqliteBin, options.out, 'SELECT COUNT(*) FROM change_relation;');
   const endpointCount = runScalar(options.sqliteBin, options.out, 'SELECT COUNT(*) FROM change_relation_endpoint;');
+  const yearCount = runScalar(options.sqliteBin, options.out, 'SELECT COUNT(DISTINCT change_year) FROM change_relation;');
 
   console.log(`Created ${options.out}`);
   console.log(`curriculum_unit: ${counts.curriculumUnit}`);
-  console.log(`change_event: ${counts.changeEvent}`);
   console.log(`change_relation: ${relationCount}`);
   console.log(`change_relation_endpoint: ${endpointCount}`);
+  console.log(`change_year distinct count: ${yearCount}`);
   console.log(`legacy view rows: ${legacyRowCount}`);
 }
 

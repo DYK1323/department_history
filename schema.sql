@@ -11,20 +11,9 @@ CREATE TABLE curriculum_unit (
   note TEXT
 );
 
-CREATE TABLE change_event (
-  event_id INTEGER PRIMARY KEY,
-  change_year INTEGER NOT NULL,
-  title TEXT,
-  source_text TEXT,
-  rule_revision_date TEXT,
-  note TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE change_relation (
   relation_id INTEGER PRIMARY KEY,
-  event_id INTEGER NOT NULL REFERENCES change_event(event_id),
+  change_year INTEGER NOT NULL,
   change_type TEXT NOT NULL CHECK (
     change_type IN ('renewed', 'revised', 'closed', 'created', 'merged', 'splitted')
   ),
@@ -53,11 +42,8 @@ CREATE TABLE unit_alias (
   UNIQUE (unit_code, alias_name)
 );
 
-CREATE INDEX idx_change_event_year
-  ON change_event(change_year);
-
-CREATE INDEX idx_change_relation_event
-  ON change_relation(event_id);
+CREATE INDEX idx_change_relation_year
+  ON change_relation(change_year);
 
 CREATE INDEX idx_endpoint_relation_side
   ON change_relation_endpoint(relation_id, side);
@@ -71,7 +57,7 @@ CREATE INDEX idx_endpoint_side_unit
 CREATE VIEW v_org_unit_relation_legacy AS
 SELECT
   cr.relation_id AS relation_id,
-  ce.change_year AS change_year,
+  cr.change_year AS change_year,
   prev.college_code AS prev_college_code,
   prev.department_code AS prev_dept_code,
   prev.major_code AS prev_major_code,
@@ -85,7 +71,6 @@ SELECT
   END AS valid_until,
   COALESCE(cr.note, '') AS note
 FROM change_relation cr
-JOIN change_event ce ON ce.event_id = cr.event_id
 LEFT JOIN change_relation_endpoint prev
   ON prev.relation_id = cr.relation_id AND prev.side = 'prev'
 LEFT JOIN change_relation_endpoint after

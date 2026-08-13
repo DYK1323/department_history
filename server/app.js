@@ -63,24 +63,19 @@ const SQLITE_CSV_ROUTES = {
   `,
   '/org_unit_relation.csv': `
     SELECT
-      cr.relation_id AS relation_id,
-      ce.change_year AS change_year,
-      COALESCE(prev.college_code, '') AS prev_college_code,
-      COALESCE(prev.department_code, '') AS prev_dept_code,
-      COALESCE(prev.major_code, '') AS prev_major_code,
-      COALESCE(after.college_code, '') AS after_college_code,
-      COALESCE(after.department_code, '') AS after_dept_code,
-      COALESCE(after.major_code, '') AS after_major_code,
-      cr.change_type AS change_type,
-      COALESCE(CAST(cr.retain_until_grad_year AS TEXT), '') AS valid_until,
-      COALESCE(cr.note, '') AS note
-    FROM change_relation cr
-    JOIN change_event ce ON ce.event_id = cr.event_id
-    LEFT JOIN change_relation_endpoint prev
-      ON prev.relation_id = cr.relation_id AND prev.side = 'prev'
-    LEFT JOIN change_relation_endpoint after
-      ON after.relation_id = cr.relation_id AND after.side = 'after'
-    ORDER BY cr.relation_id, prev.sort_order, after.sort_order;
+      relation_id,
+      change_year,
+      COALESCE(prev_college_code, '') AS prev_college_code,
+      COALESCE(prev_dept_code, '') AS prev_dept_code,
+      COALESCE(prev_major_code, '') AS prev_major_code,
+      COALESCE(after_college_code, '') AS after_college_code,
+      COALESCE(after_dept_code, '') AS after_dept_code,
+      COALESCE(after_major_code, '') AS after_major_code,
+      change_type,
+      COALESCE(valid_until, '') AS valid_until,
+      COALESCE(note, '') AS note
+    FROM v_org_unit_relation_legacy
+    ORDER BY relation_id;
   `,
 };
 
@@ -119,12 +114,8 @@ async function sqliteRun(sql) {
 }
 
 function sqlValue(value) {
-  if (value === null || value === undefined || value === '') {
-    return 'NULL';
-  }
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? String(value) : 'NULL';
-  }
+  if (value === null || value === undefined || value === '') return 'NULL';
+  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : 'NULL';
   return `'${String(value).replace(/'/g, "''")}'`;
 }
 
@@ -150,12 +141,10 @@ function assertInteger(value, label, { allowNull = false } = {}) {
 
 function normalizeCodeList(values, label) {
   const source = Array.isArray(values) ? values : [];
-  const normalized = source
-    .map(value => cleanText(value))
-    .filter(Boolean);
+  const normalized = source.map(value => cleanText(value)).filter(Boolean);
   const uniqueCodes = [...new Set(normalized)];
 
-  if (uniqueCodes.length !== normalized.length) {
+  if (normalized.length !== uniqueCodes.length) {
     throw new Error(`${label} contains duplicate unit codes`);
   }
 
@@ -224,9 +213,7 @@ async function serveSqliteCsv(urlPath, res) {
 }
 
 async function syncCsvExports() {
-  if (DISABLE_CSV_SYNC) {
-    return;
-  }
+  if (DISABLE_CSV_SYNC) return;
 
   fs.mkdirSync(CSV_EXPORT_DIR, { recursive: true });
   const dimCsv = await sqliteQueryCsv(SQLITE_CSV_ROUTES['/dim_org_unit.csv']);
@@ -246,9 +233,10 @@ async function loadUnits() {
     FROM curriculum_unit
     ORDER BY rowid;
   `);
-
-  const unitsByCode = new Map(units.map(unit => [unit.unit_code, unit]));
-  return { units, unitsByCode };
+  return {
+    units,
+    unitsByCode: new Map(units.map(unit => [unit.unit_code, unit])),
+  };
 }
 
 function buildPathCodes(unitCode, unitsByCode) {
@@ -267,14 +255,10 @@ function buildPathCodes(unitCode, unitsByCode) {
 
 function buildUnitDto(unitCode, unitsByCode) {
   const unit = unitsByCode.get(unitCode);
-  if (!unit) {
-    throw new Error(`Unknown unit code: ${unitCode}`);
-  }
+  if (!unit) throw new Error(`Unknown unit code: ${unitCode}`);
 
   const pathCodes = buildPathCodes(unitCode, unitsByCode);
-  const pathNames = pathCodes
-    .map(code => unitsByCode.get(code)?.unit_name || code)
-    .filter(Boolean);
+  const pathNames = pathCodes.map(code => unitsByCode.get(code)?.unit_name || code);
   const collegeCode = pathCodes.find(code => unitsByCode.get(code)?.unit_type === 'college') || '';
   const departmentCode = pathCodes.find(code => unitsByCode.get(code)?.unit_type === 'department') || '';
 
@@ -293,68 +277,53 @@ function buildUnitDto(unitCode, unitsByCode) {
 }
 
 function deriveEndpoint(unitCode, unitsByCode) {
-  const dto = buildUnitDto(unitCode, unitsByCode);
-  const majorCode = dto.unitType === 'major'
-    ? dto.unitCode
-    : (dto.pathCodes.find(code => unitsByCode.get(code)?.unit_type === 'major') || '');
+  const unit = buildUnitDto(unitCode, unitsByCode);
+  const majorCode = unit.unitType === 'major'
+    ? unit.unitCode
+    : (unit.pathCodes.find(code => unitsByCode.get(code)?.unit_type === 'major') || '');
 
   return {
-    unitCode: dto.unitCode,
-    unitName: dto.unitName,
-    unitType: dto.unitType,
-    unitTypeLabel: dto.unitTypeLabel,
-    collegeCode: dto.collegeCode,
-    departmentCode: dto.departmentCode,
+    unitCode: unit.unitCode,
+    unitName: unit.unitName,
+    unitType: unit.unitType,
+    unitTypeLabel: unit.unitTypeLabel,
+    collegeCode: unit.collegeCode,
+    departmentCode: unit.departmentCode,
     majorCode,
-    pathCodes: dto.pathCodes,
-    path: dto.path,
-    isTempCode: dto.isTempCode,
+    pathCodes: unit.pathCodes,
+    path: unit.path,
+    isTempCode: unit.isTempCode,
   };
-}
-
-function fullDisplayName(endpoint) {
-  if (!endpoint) return '';
-  if (endpoint.unitType !== 'major') return endpoint.unitName;
-  const names = endpoint.path.split(' > ');
-  const departmentName = names.find((_, index) => endpoint.pathCodes[index] === endpoint.departmentCode) || '';
-  return departmentName ? `${departmentName}(${endpoint.unitName})` : endpoint.unitName;
 }
 
 function relationExpansionCount(prevCount, afterCount) {
-  if (prevCount > 0 && afterCount > 0) {
-    return prevCount * afterCount;
-  }
+  if (prevCount > 0 && afterCount > 0) return prevCount * afterCount;
   return Math.max(prevCount, afterCount);
 }
 
-function normalizeIncomingPayload(payload) {
-  if (payload && typeof payload === 'object' && payload.event && payload.relation) {
+function normalizeRelationPayload(payload) {
+  if (payload && typeof payload === 'object' && payload.relation) {
     return {
-      event: payload.event,
-      relation: payload.relation,
+      changeYear: payload.changeYear,
+      changeType: payload.relation.changeType,
+      retainUntilGradYear: payload.relation.retainUntilGradYear,
+      note: payload.relation.note,
+      prevUnitCodes: payload.relation.prevUnitCodes,
+      afterUnitCodes: payload.relation.afterUnitCodes,
     };
   }
 
-  return {
-    event: {
-      changeYear: payload.changeYear,
-    },
-    relation: {
-      changeType: payload.changeType,
-      retainUntilGradYear: payload.retainUntilGradYear,
-      note: payload.note,
-      prevUnitCodes: payload.prevUnitCodes,
-      afterUnitCodes: payload.afterUnitCodes,
-    },
-  };
+  return payload || {};
 }
 
-function validateRelationInput(relation) {
-  const changeType = cleanText(relation.changeType);
-  const prevUnitCodes = normalizeCodeList(relation.prevUnitCodes, 'prevUnitCodes');
-  const afterUnitCodes = normalizeCodeList(relation.afterUnitCodes, 'afterUnitCodes');
+function validateRelationPayload(payload) {
+  const normalized = normalizeRelationPayload(payload);
+  const changeYear = assertInteger(normalized.changeYear, 'changeYear');
+  const changeType = cleanText(normalized.changeType);
+  const prevUnitCodes = normalizeCodeList(normalized.prevUnitCodes, 'prevUnitCodes');
+  const afterUnitCodes = normalizeCodeList(normalized.afterUnitCodes, 'afterUnitCodes');
   const retainUntilGradYear = assertInteger(
-    relation.retainUntilGradYear,
+    normalized.retainUntilGradYear,
     'retainUntilGradYear',
     { allowNull: true }
   );
@@ -381,83 +350,12 @@ function validateRelationInput(relation) {
   }
 
   return {
+    changeYear,
     changeType,
     retainUntilGradYear,
-    note: nullableText(relation.note),
+    note: nullableText(normalized.note),
     prevUnitCodes,
     afterUnitCodes,
-  };
-}
-
-async function resolveEventInput(eventInput) {
-  const eventId = assertInteger(eventInput.eventId, 'event.eventId', { allowNull: true });
-  const submittedMeta = {
-    changeYear: assertInteger(eventInput.changeYear, 'event.changeYear', { allowNull: true }),
-    title: nullableText(eventInput.title),
-    sourceText: nullableText(eventInput.sourceText),
-    ruleRevisionDate: nullableText(eventInput.ruleRevisionDate),
-    note: nullableText(eventInput.note),
-  };
-
-  if (eventId !== null) {
-    const existingRows = await sqliteQueryJson(`
-      SELECT
-        event_id,
-        change_year,
-        COALESCE(title, '') AS title,
-        COALESCE(source_text, '') AS source_text,
-        COALESCE(rule_revision_date, '') AS rule_revision_date,
-        COALESCE(note, '') AS note
-      FROM change_event
-      WHERE event_id = ${sqlValue(eventId)}
-      LIMIT 1;
-    `);
-    const existing = existingRows[0];
-    if (!existing) {
-      throw new Error(`Unknown eventId: ${eventId}`);
-    }
-
-    const conflicts = [];
-    if (submittedMeta.changeYear !== null && submittedMeta.changeYear !== Number(existing.change_year)) {
-      conflicts.push('changeYear');
-    }
-    if (submittedMeta.title !== null && submittedMeta.title !== cleanText(existing.title)) {
-      conflicts.push('title');
-    }
-    if (submittedMeta.sourceText !== null && submittedMeta.sourceText !== cleanText(existing.source_text)) {
-      conflicts.push('sourceText');
-    }
-    if (submittedMeta.ruleRevisionDate !== null && submittedMeta.ruleRevisionDate !== cleanText(existing.rule_revision_date)) {
-      conflicts.push('ruleRevisionDate');
-    }
-    if (submittedMeta.note !== null && submittedMeta.note !== cleanText(existing.note)) {
-      conflicts.push('note');
-    }
-
-    if (conflicts.length) {
-      throw new Error(`Existing event metadata conflict: ${conflicts.join(', ')}`);
-    }
-
-    return {
-      mode: 'existing',
-      eventId,
-      changeYear: Number(existing.change_year),
-      title: cleanText(existing.title) || `${existing.change_year}학년도 편제개편`,
-      sourceText: cleanText(existing.source_text) || null,
-      ruleRevisionDate: cleanText(existing.rule_revision_date) || null,
-      note: cleanText(existing.note) || null,
-    };
-  }
-
-  const changeYear = assertInteger(eventInput.changeYear, 'event.changeYear');
-  return {
-    mode: 'new',
-    eventId: null,
-    changeYear,
-    title: nullableText(eventInput.title) || `${changeYear}학년도 편제개편`,
-    sourceText: nullableText(eventInput.sourceText),
-    ruleRevisionDate: nullableText(eventInput.ruleRevisionDate),
-    note: nullableText(eventInput.note),
   };
 }
 
@@ -467,26 +365,19 @@ async function loadBootstrapData() {
   }
 
   const { units, unitsByCode } = await loadUnits();
-  const events = await sqliteQueryJson(`
+  const yearRows = await sqliteQueryJson(`
     SELECT
-      ce.event_id,
-      ce.change_year,
-      COALESCE(ce.title, '') AS title,
-      COALESCE(ce.rule_revision_date, '') AS rule_revision_date,
-      COALESCE(ce.note, '') AS note,
-      COUNT(cr.relation_id) AS relation_count
-    FROM change_event ce
-    LEFT JOIN change_relation cr ON cr.event_id = ce.event_id
-    GROUP BY ce.event_id
-    ORDER BY ce.change_year DESC, ce.event_id DESC;
+      change_year,
+      COUNT(*) AS relation_count
+    FROM change_relation
+    GROUP BY change_year
+    ORDER BY change_year DESC;
   `);
 
   const recentRelationRows = await sqliteQueryJson(`
     SELECT
       cr.relation_id,
-      ce.event_id,
-      ce.change_year,
-      COALESCE(ce.title, '') AS event_title,
+      cr.change_year,
       cr.change_type,
       cr.retain_until_grad_year,
       COALESCE(cr.note, '') AS relation_note,
@@ -494,7 +385,6 @@ async function loadBootstrapData() {
       endpoint.sort_order,
       endpoint.unit_code
     FROM change_relation cr
-    JOIN change_event ce ON ce.event_id = cr.event_id
     LEFT JOIN change_relation_endpoint endpoint ON endpoint.relation_id = cr.relation_id
     ORDER BY cr.relation_id DESC, endpoint.side, endpoint.sort_order
     LIMIT 120;
@@ -506,9 +396,7 @@ async function loadBootstrapData() {
     if (!groupedRecent.has(relationId)) {
       groupedRecent.set(relationId, {
         relationId,
-        eventId: Number(row.event_id),
         changeYear: Number(row.change_year),
-        eventTitle: cleanText(row.event_title),
         changeType: row.change_type,
         retainUntilGradYear: row.retain_until_grad_year === null ? null : Number(row.retain_until_grad_year),
         note: cleanText(row.relation_note) || null,
@@ -524,24 +412,17 @@ async function loadBootstrapData() {
   return {
     units: units.map(unit => buildUnitDto(unit.unit_code, unitsByCode)),
     changeTypes: Object.entries(CHANGE_TYPE_LABELS).map(([code, label]) => ({ code, label })),
-    years: [...new Set(events.map(event => Number(event.change_year)))].sort((a, b) => a - b),
-    events: events.map(event => ({
-      eventId: Number(event.event_id),
-      changeYear: Number(event.change_year),
-      title: cleanText(event.title),
-      ruleRevisionDate: cleanText(event.rule_revision_date) || null,
-      note: cleanText(event.note) || null,
-      relationCount: Number(event.relation_count),
-      displayLabel: `#${event.event_id} · ${event.change_year}학년도 · ${cleanText(event.title) || `${event.change_year}학년도 편제개편`}`,
-    })),
+    years: yearRows.map(row => Number(row.change_year)).sort((a, b) => a - b),
+    relationCountsByYear: yearRows.reduce((acc, row) => {
+      acc[String(row.change_year)] = Number(row.relation_count);
+      return acc;
+    }, {}),
     recentRelations: [...groupedRecent.values()].slice(0, 12).map(relation => {
       const prev = relation.prev.map(code => deriveEndpoint(code, unitsByCode));
       const after = relation.after.map(code => deriveEndpoint(code, unitsByCode));
       return {
         relationId: relation.relationId,
-        eventId: relation.eventId,
         changeYear: relation.changeYear,
-        eventTitle: relation.eventTitle,
         changeType: relation.changeType,
         changeTypeLabel: CHANGE_TYPE_LABELS[relation.changeType] || relation.changeType,
         retainUntilGradYear: relation.retainUntilGradYear,
@@ -559,66 +440,32 @@ async function insertRelation(payload) {
     throw new Error('SQLite database does not exist');
   }
 
-  const normalized = normalizeIncomingPayload(payload);
-  const event = await resolveEventInput(normalized.event || {});
-  const relation = validateRelationInput(normalized.relation || {});
+  const relation = validateRelationPayload(payload);
   const { unitsByCode } = await loadUnits();
-
   const prevEndpoints = relation.prevUnitCodes.map(code => deriveEndpoint(code, unitsByCode));
   const afterEndpoints = relation.afterUnitCodes.map(code => deriveEndpoint(code, unitsByCode));
 
-  if (prevEndpoints.some(endpoint => !unitsByCode.has(endpoint.unitCode)) ||
-      afterEndpoints.some(endpoint => !unitsByCode.has(endpoint.unitCode))) {
-    throw new Error('All unit codes must exist');
-  }
-
   const ids = await sqliteQueryJson(`
     SELECT
-      (SELECT COALESCE(MAX(event_id), 0) FROM change_event) AS max_event_id,
       (SELECT COALESCE(MAX(relation_id), 0) FROM change_relation) AS max_relation_id,
       (SELECT COALESCE(MAX(endpoint_id), 0) FROM change_relation_endpoint) AS max_endpoint_id;
   `);
-  const currentIds = ids[0] || { max_event_id: 0, max_relation_id: 0, max_endpoint_id: 0 };
-
-  const eventId = event.mode === 'existing'
-    ? event.eventId
-    : currentIds.max_event_id + 1;
+  const currentIds = ids[0] || { max_relation_id: 0, max_endpoint_id: 0 };
   const relationId = currentIds.max_relation_id + 1;
   let endpointId = currentIds.max_endpoint_id + 1;
 
   const statements = ['PRAGMA foreign_keys = ON;', 'BEGIN IMMEDIATE;'];
-
-  if (event.mode === 'new') {
-    statements.push(`
-      INSERT INTO change_event (
-        event_id,
-        change_year,
-        title,
-        source_text,
-        rule_revision_date,
-        note
-      ) VALUES (
-        ${sqlValue(eventId)},
-        ${sqlValue(event.changeYear)},
-        ${sqlValue(event.title)},
-        ${sqlValue(event.sourceText)},
-        ${sqlValue(event.ruleRevisionDate)},
-        ${sqlValue(event.note)}
-      );
-    `);
-  }
-
   statements.push(`
     INSERT INTO change_relation (
       relation_id,
-      event_id,
+      change_year,
       change_type,
       retain_until_grad_year,
       note,
       legacy_relation_id
     ) VALUES (
       ${sqlValue(relationId)},
-      ${sqlValue(eventId)},
+      ${sqlValue(relation.changeYear)},
       ${sqlValue(relation.changeType)},
       ${sqlValue(relation.retainUntilGradYear)},
       ${sqlValue(relation.note)},
@@ -682,14 +529,7 @@ async function insertRelation(payload) {
 
   return {
     relationId,
-    eventId,
-    event: {
-      eventId,
-      changeYear: event.changeYear,
-      title: event.title,
-      ruleRevisionDate: event.ruleRevisionDate,
-      note: event.note,
-    },
+    changeYear: relation.changeYear,
     relation: {
       changeType: relation.changeType,
       changeTypeLabel: CHANGE_TYPE_LABELS[relation.changeType] || relation.changeType,
