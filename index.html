@@ -5,29 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>편제 변경 플로우</title>
   <style>
+    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css");
+
     :root {
-      --ink: #06111f;
-      --ink-soft: #142235;
-      --paper: #fbfbf8;
+      --ink: #000000;
+      --ink-soft: #31302e;
+      --paper: #f6f5f4;
       --panel: #ffffff;
-      --line: #0b1624;
-      --muted: #64748b;
-      --grid: #e5e7eb;
-      --accent: #1aa7d9;
-      --node-bg: #f8fafc;
-      --node-border: #94a3b8;
-      --node-text: #0f172a;
-      --node-subtle: #475569;
-      --college-bg: #e0f2fe;
-      --college-border: #0284c7;
-      --major-bg: #fff7ed;
-      --major-border: #f97316;
-      --created: #0f9f6e;
-      --revised: #2f6fe4;
-      --renewed: #7952d6;
+      --canvas: #ffffff;
+      --line: #615d59;
+      --muted: #615d59;
+      --faint: #a39e98;
+      --hairline: #e6e6e6;
+      --accent: #0075de;
+      --accent-active: #005bab;
+      --node-bg: #ffffff;
+      --node-border: #a39e98;
+      --node-text: #000000;
+      --node-subtle: #615d59;
+      --dept-bg: #f6f5f4;
+      --dept-border: #e6e6e6;
+      --dept-label-bg: #000000;
+      --created: #1aae39;
+      --revised: #005bab;
+      --renewed: #7b61d1;
       --closed: #d64545;
-      --merged: #e57a19;
-      --splitted: #0097b2;
+      --merged: #dd5b00;
+      --splitted: #2a9d99;
     }
 
     * { box-sizing: border-box; }
@@ -39,45 +43,70 @@
       flex-direction: column;
       background: var(--paper);
       color: var(--ink);
-      font-family: "Aptos", "Segoe UI", "Malgun Gothic", sans-serif;
+      font-family: "Pretendard Variable", "Pretendard", "Segoe UI", "Malgun Gothic", sans-serif;
+      font-weight: 400;
     }
 
-    .toolbar {
+    .app-header {
       position: sticky;
       top: 0;
       z-index: 30;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: end;
-      gap: 12px;
-      padding: 14px 18px;
-      background: rgba(251, 251, 248, 0.94);
-      border-bottom: 1px solid var(--grid);
+      background: var(--paper);
+      border-bottom: 1px solid var(--hairline);
       backdrop-filter: blur(10px);
     }
 
+    .app-titlebar {
+      display: grid;
+      grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .brand-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .filter-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      justify-self: center;
+    }
+
     h1 {
-      margin: 0 18px 0 0;
+      margin: 0;
       font-size: 19px;
       letter-spacing: 0;
-      text-transform: uppercase;
     }
 
     label {
-      display: grid;
-      gap: 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       color: var(--muted);
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 400;
+      white-space: nowrap;
     }
 
     input,
     select,
     button {
       min-height: 34px;
-      border: 1px solid #cbd5e1;
-      border-radius: 4px;
-      background: #fff;
+      border: 1px solid var(--hairline);
+      border-radius: 0;
+      background: var(--panel);
       color: var(--ink);
       font: inherit;
       font-size: 13px;
@@ -87,14 +116,14 @@
     button {
       border-color: var(--ink);
       background: var(--ink);
-      color: #fff;
-      font-weight: 800;
+      color: var(--panel);
+      font-weight: 600;
       cursor: pointer;
     }
 
     button:disabled {
-      border-color: #94a3b8;
-      background: #94a3b8;
+      border-color: var(--faint);
+      background: var(--faint);
       cursor: not-allowed;
     }
 
@@ -103,9 +132,10 @@
       flex-wrap: wrap;
       gap: 10px;
       margin-left: auto;
+      justify-self: end;
       color: var(--muted);
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 400;
     }
 
     .legend i {
@@ -117,11 +147,51 @@
       background: var(--ink);
     }
 
+    @media (max-width: 1120px) {
+      .app-titlebar {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .filter-controls,
+      .legend {
+        justify-self: start;
+      }
+    }
+
     .canvas-wrap {
       flex: 1;
       min-height: 0;
-      padding: 20px 32px;
+      padding: 0;
       overflow: auto;
+      background: var(--canvas);
+    }
+
+    .flow-content {
+      width: max-content;
+      min-width: 800px;
+      margin: 0;
+    }
+
+    .year-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      left: 0;
+      height: 44px;
+      width: 100vw;
+      margin-bottom: 0;
+      background: rgba(255, 255, 255, 0.88);
+      border-bottom: 1px solid var(--hairline);
+      box-shadow: none;
+      backdrop-filter: blur(10px);
+    }
+
+    .year-track {
+      position: relative;
+      height: 100%;
+      width: max-content;
+      min-width: 800px;
     }
 
     .canvas {
@@ -129,30 +199,10 @@
       width: max-content;
       min-width: 800px;
       height: 920px;
-      margin: 0 auto;
-      background: #fffefb;
-      border: 1px solid #ece7dc;
-      box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
-    }
-
-    .heading {
-      position: absolute;
-      left: 44px;
-      top: 34px;
-      z-index: 3;
-    }
-
-    .heading h2 {
       margin: 0;
-      font-size: 22px;
-      font-weight: 900;
-      letter-spacing: 0;
-    }
-
-    .heading p {
-      margin: 8px 0 0;
-      color: var(--muted);
-      font-size: 13px;
+      background: var(--canvas);
+      border: 0;
+      box-shadow: none;
     }
 
     svg {
@@ -168,39 +218,45 @@
     .node {
       position: absolute;
       z-index: 3;
-      display: grid;
-      place-items: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       width: 178px;
-      min-height: 70px;
-      padding: 9px 10px;
-      border: 2px solid var(--node-border);
-      border-radius: 10px;
+      height: 42px;
+      padding: 0 12px;
+      border: 1px solid var(--node-border);
+      border-radius: 0;
       background: var(--node-bg);
       color: var(--node-text);
       text-align: center;
-      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+      box-shadow: none;
       cursor: default;
     }
 
     .node.college {
       width: 178px;
-      min-height: 70px;
-      border-color: var(--college-border);
-      background: var(--college-bg);
-      color: #0c4a6e;
+      height: 42px;
+      border-color: var(--node-border);
+      background: var(--node-bg);
+      color: var(--node-text);
     }
 
     .node.major {
       width: 178px;
-      min-height: 64px;
-      border-color: var(--major-border);
-      border-radius: 10px;
-      background: var(--major-bg);
+      height: 42px;
+      border-color: var(--node-border);
+      border-radius: 0;
+      background: var(--node-bg);
     }
 
     .node.focus {
-      outline: 4px solid rgba(26, 167, 217, 0.38);
-      outline-offset: 3px;
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .node.related {
+      outline: 1px solid var(--faint);
+      outline-offset: 2px;
     }
 
     .node.dimmed {
@@ -209,45 +265,33 @@
 
     .node-title {
       display: block;
+      max-width: 100%;
       font-size: 12px;
-      font-weight: 850;
-      line-height: 1.28;
-      word-break: keep-all;
-      overflow-wrap: anywhere;
-    }
-
-    .node-code {
-      display: none;
-      margin-top: 6px;
-      color: rgba(255, 255, 255, 0.66);
-      font-size: 10px;
+      font-weight: 600;
       line-height: 1.2;
-    }
-
-    .node-path {
-      display: block;
-      margin-top: 6px;
-      color: var(--node-subtle);
-      font-size: 10px;
-      line-height: 1.28;
       word-break: keep-all;
-      overflow-wrap: anywhere;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .dept-box {
       position: absolute;
       z-index: 1;
       width: 214px;
-      border: 2px solid #64748b;
-      border-radius: 14px;
-      background: rgba(226, 232, 240, 0.78);
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+      border: 0;
+      border-radius: 0;
+      background: var(--dept-bg);
+      box-shadow: none;
     }
 
     .dept-box.focus {
-      border-color: var(--accent);
-      background: rgba(224, 242, 254, 0.9);
-      box-shadow: 0 0 0 4px rgba(26, 167, 217, 0.16);
+      background: var(--panel);
+      box-shadow: none;
+    }
+
+    .dept-box.related {
+      background: rgba(246, 245, 244, 0.62);
     }
 
     .dept-box.dimmed {
@@ -257,14 +301,15 @@
     .dept-box-title {
       position: absolute;
       left: 12px;
-      top: -13px;
+      top: -12px;
       max-width: 188px;
       padding: 3px 8px;
-      border-radius: 5px;
-      background: #334155;
-      color: #fff;
+      border: 0;
+      border-radius: 0;
+      background: var(--dept-label-bg);
+      color: var(--panel);
       font-size: 11px;
-      font-weight: 900;
+      font-weight: 600;
       line-height: 1.2;
       white-space: nowrap;
       overflow: hidden;
@@ -278,52 +323,52 @@
       width: 145px;
       color: var(--muted);
       font-size: 12px;
-      font-weight: 900;
+      font-weight: 600;
       text-align: right;
-      border-top: 2px solid #dbe1ea;
+      border-top: 1px solid var(--hairline);
       padding-top: 8px;
     }
 
     .year-label {
       position: absolute;
       z-index: 2;
-      top: 126px;
+      top: 14px;
       width: 130px;
       margin-left: -65px;
       color: var(--muted);
       font-size: 12px;
-      font-weight: 900;
+      font-weight: 600;
       text-align: center;
     }
 
     .flow-line {
       fill: none;
       stroke: var(--line);
-      stroke-width: 2.2;
+      stroke-width: 1.9;
       marker-end: url(#arrow);
     }
 
     .flow-line.created { stroke: var(--created); }
-    .flow-line.revised { stroke: var(--revised); }
+    .flow-line.revised { stroke: var(--revised); stroke-width: 2.2; }
     .flow-line.renewed { stroke: var(--renewed); }
     .flow-line.closed { stroke: var(--closed); }
     .flow-line.merged { stroke: var(--merged); }
     .flow-line.splitted { stroke: var(--splitted); }
     .flow-line.unchanged {
-      stroke: #b8c0cc;
+      stroke: var(--faint);
       stroke-width: 1.4;
-      opacity: 0.42;
+      opacity: 0.52;
     }
     .flow-line.dimmed { opacity: 0.12; }
-    .flow-line.focus { stroke-width: 3.4; opacity: 1; }
+    .flow-line.focus { stroke-width: 2.8; opacity: 1; }
 
     .edge-label {
       fill: var(--ink);
-      font-size: 12px;
-      font-weight: 900;
+      font-size: 11px;
+      font-weight: 600;
       paint-order: stroke;
-      stroke: #fffefb;
-      stroke-width: 7px;
+      stroke: var(--canvas);
+      stroke-width: 6px;
       stroke-linejoin: round;
     }
 
@@ -353,64 +398,195 @@
       display: none;
       max-width: 360px;
       padding: 10px 12px;
-      border: 1px solid #dbe1ea;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.96);
-      box-shadow: 0 16px 35px rgba(15, 23, 42, 0.16);
+      border: 1px solid var(--hairline);
+      border-radius: 0;
+      background: var(--panel);
+      box-shadow: none;
       color: var(--ink);
       font-size: 13px;
       line-height: 1.45;
       pointer-events: none;
     }
+
+    .detail-panel {
+      position: absolute;
+      top: 18px;
+      left: 0;
+      z-index: 40;
+      display: none;
+      width: 340px;
+      max-height: calc(100vh - 160px);
+      overflow: auto;
+      border: 1px solid var(--hairline);
+      border-radius: 0;
+      background: rgba(255, 255, 255, 0.94);
+      color: var(--ink);
+      box-shadow: none;
+      backdrop-filter: blur(12px);
+    }
+
+    .detail-panel.is-open {
+      display: block;
+    }
+
+    .detail-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .detail-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    .detail-subtitle {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .detail-close {
+      min-width: 30px;
+      min-height: 30px;
+      padding: 0 8px;
+      background: var(--panel);
+      color: var(--ink);
+      border-color: var(--hairline);
+    }
+
+    .detail-body {
+      display: grid;
+      gap: 14px;
+      padding: 14px 16px 16px;
+    }
+
+    .detail-section {
+      display: grid;
+      gap: 8px;
+    }
+
+    .detail-section-title {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .detail-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+    }
+
+    .detail-row {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 8px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .detail-row dt {
+      color: var(--muted);
+    }
+
+    .detail-row dd {
+      margin: 0;
+      color: var(--ink);
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
+    .relation-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .relation-card {
+      display: grid;
+      gap: 4px;
+      padding: 8px 0;
+      border-top: 1px solid var(--hairline);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .relation-card:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .relation-meta {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .relation-kind {
+      font-weight: 600;
+    }
+
+    .relation-note {
+      color: var(--muted);
+    }
+
   </style>
 </head>
 <body>
-  <div class="toolbar">
-    <h1>Org Flow</h1>
-    <label>dim_org_unit.csv
-      <input id="dimFile" type="file" accept=".csv,text/csv">
-    </label>
-    <label>org_unit_relation.csv
-      <input id="relationFile" type="file" accept=".csv,text/csv">
-    </label>
-    <button id="loadBtn" disabled>그리기</button>
-    <label>시작 학년도
-      <select id="startYear"></select>
-    </label>
-    <label>종료 학년도
-      <select id="endYear"></select>
-    </label>
-    <label>변경유형
-      <select id="typeFilter"><option value="">전체</option></select>
-    </label>
-    <label>검색
-      <input id="searchBox" type="search" placeholder="조직명/코드">
-    </label>
-    <div class="legend">
-      <span><i style="background:var(--renewed)"></i>개편</span>
-      <span><i style="background:var(--revised)"></i>명칭변경</span>
-      <span><i style="background:var(--splitted)"></i>분리</span>
-      <span><i style="background:var(--merged)"></i>통합</span>
-      <span><i style="background:var(--created)"></i>신설</span>
-      <span><i style="background:var(--closed)"></i>폐지</span>
-    </div>
-  </div>
-
-  <div class="canvas-wrap">
-    <section class="canvas" id="canvas">
-      <div class="heading">
-        <h2>편제 변경 플로우</h2>
-        <p id="subtitle">CSV를 선택하면 변경 이력이 연도별 흐름도로 표시됩니다.</p>
+  <header class="app-header">
+    <div class="app-titlebar">
+      <div class="brand">
+        <h1>편제 변경 이력</h1>
+        <span class="brand-kicker">ORG FLOW</span>
       </div>
-      <svg id="svg">
-        <defs>
-          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto">
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"></path>
-          </marker>
-        </defs>
-      </svg>
-      <div class="empty" id="empty">dim_org_unit.csv와 org_unit_relation.csv를 선택해주세요.</div>
-    </section>
+      <div class="filter-controls">
+        <label>시작 학년도
+          <select id="startYear"></select>
+        </label>
+        <label>종료 학년도
+          <select id="endYear"></select>
+        </label>
+        <label>검색
+          <input id="searchBox" type="search" placeholder="조직명/코드">
+        </label>
+        <button id="resetBtn" type="button">초기화</button>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--renewed)"></i>개편</span>
+        <span><i style="background:var(--revised)"></i>명칭변경</span>
+        <span><i style="background:var(--splitted)"></i>분리</span>
+        <span><i style="background:var(--merged)"></i>통합</span>
+        <span><i style="background:var(--created)"></i>신설</span>
+        <span><i style="background:var(--closed)"></i>폐지</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="canvas-wrap" id="canvasWrap">
+    <div class="flow-content" id="flowContent">
+      <div class="year-header" id="yearHeader">
+        <div class="year-track" id="yearTrack"></div>
+      </div>
+      <section class="canvas" id="canvas">
+        <svg id="svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"></path>
+            </marker>
+          </defs>
+        </svg>
+        <aside class="detail-panel" id="detailPanel" aria-live="polite" aria-label="선택 조직 상세"></aside>
+        <div class="empty" id="empty">dim_org_unit.csv와 org_unit_relation.csv를 자동으로 불러오는 중입니다.</div>
+      </section>
+    </div>
   </div>
 
   <div class="tooltip" id="tooltip"></div>
@@ -422,7 +598,8 @@
       nodes: [],
       edges: [],
       selectedNodeKey: "",
-      loadedFromLocalFiles: false
+      defaultStartYear: "",
+      defaultEndYear: ""
     };
     const DEFAULT_FILES = {
       dim: "dim_org_unit.csv",
@@ -434,93 +611,101 @@
       splitted: "분리",
       merged: "통합",
       created: "신설",
-      closed: "폐지"
+      closed: "폐지",
+      unchanged: "유지"
+    };
+    const UNIT_TYPE_LABELS = {
+      college: "학부",
+      department: "학과",
+      major: "전공"
+    };
+    const LAYOUT = {
+      wrapPadding: 32,
+      minCanvasWidth: 800,
+      minCanvasHeight: 920,
+      canvasPadding: 48,
+      minColumnStep: 200,
+      minContentHeight: 760,
+      canvasBottomPadding: 110,
+      nodeWidth: 178,
+      nodeHalfWidth: 89,
+      nodeHalfHeight: 21,
+      nodeStep: 50,
+      nodeFallbackStep: 60,
+      edgeAnchorOffset: 90,
+      edgeControlMaxOffset: 64,
+      edgeLabelYOffset: 8,
+      layoutTop: 54,
+      deptBoxHalfWidth: 107,
+      deptBoxPadding: 38,
+      deptBoxMinHeight: 76,
+      minGroupGap: 8,
+      maxGroupGap: 38,
+      detailPanelWidth: 340,
+      detailPanelGap: 48,
+      groupLabelFallbackY: 54,
+      groupLabelYOffset: 38
     };
 
-    const dimFile = document.getElementById("dimFile");
-    const relationFile = document.getElementById("relationFile");
-    const loadBtn = document.getElementById("loadBtn");
     const startYear = document.getElementById("startYear");
     const endYear = document.getElementById("endYear");
-    const typeFilter = document.getElementById("typeFilter");
     const searchBox = document.getElementById("searchBox");
+    const resetBtn = document.getElementById("resetBtn");
+    const canvasWrap = document.getElementById("canvasWrap");
+    const flowContent = document.getElementById("flowContent");
+    const yearHeader = document.getElementById("yearHeader");
+    const yearTrack = document.getElementById("yearTrack");
     const canvas = document.getElementById("canvas");
     const svg = document.getElementById("svg");
     const empty = document.getElementById("empty");
-    const subtitle = document.getElementById("subtitle");
     const tooltip = document.getElementById("tooltip");
+    const detailPanel = document.getElementById("detailPanel");
 
-    dimFile.addEventListener("change", updateLoad);
-    relationFile.addEventListener("change", updateLoad);
-    loadBtn.addEventListener("click", loadData);
     startYear.addEventListener("change", render);
     endYear.addEventListener("change", render);
-    typeFilter.addEventListener("change", render);
     searchBox.addEventListener("input", applySearch);
+    resetBtn.addEventListener("click", resetFilters);
+    canvasWrap.addEventListener("scroll", syncYearHeader);
     canvas.addEventListener("click", event => {
-      if (!event.target.closest(".node")) {
+      if (!event.target.closest(".node") && !event.target.closest(".detail-panel")) {
         state.selectedNodeKey = "";
+        hideDetailPanel();
         applySearch();
       }
     });
     window.addEventListener("load", bootstrapData);
 
-    function updateLoad() {
-      loadBtn.disabled = !state.loadedFromLocalFiles &&
-        !(dimFile.files.length && relationFile.files.length);
+    function syncYearHeader() {
+      const x = canvasWrap.scrollLeft;
+      yearHeader.style.transform = `translateX(${x}px)`;
+      yearTrack.style.transform = `translateX(${-x}px)`;
+      if (detailPanel.classList.contains("is-open")) {
+        detailPanel.style.top = `${canvasWrap.scrollTop + 18}px`;
+      }
     }
 
     async function bootstrapData() {
       try {
         await loadData();
       } catch (_error) {
-        state.loadedFromLocalFiles = false;
-        updateLoad();
-        subtitle.textContent = "같은 폴더의 CSV 자동 읽기에 실패했습니다. 아래 파일 선택으로 직접 불러올 수 있습니다.";
-        empty.textContent = "자동 읽기에 실패했습니다. dim_org_unit.csv와 org_unit_relation.csv를 직접 선택해주세요.";
+        empty.textContent = "dim_org_unit.csv와 org_unit_relation.csv를 같은 폴더에 두고 http://localhost 같은 로컬 서버로 열어주세요.";
       }
     }
 
     async function loadData() {
-      try {
-        const { unitText, relationText, sourceLabel } = await loadCsvSources();
-        ingestData(unitText, relationText);
-        subtitle.textContent = sourceLabel;
-        empty.textContent = "조건에 맞는 변경 이력이 없습니다.";
-        state.loadedFromLocalFiles = sourceLabel.includes(DEFAULT_FILES.dim);
-        updateLoad();
-      } catch (error) {
-        state.loadedFromLocalFiles = false;
-        updateLoad();
-        throw error;
-      }
+      const { unitText, relationText } = await loadCsvSources();
+      ingestData(unitText, relationText);
+      empty.textContent = "조건에 맞는 변경 이력이 없습니다.";
     }
 
     async function loadCsvSources() {
-      try {
-        const [unitText, relationText] = await Promise.all([
-          fetchCsvText(DEFAULT_FILES.dim),
-          fetchCsvText(DEFAULT_FILES.relation)
-        ]);
-        return {
-          unitText,
-          relationText,
-          sourceLabel: `같은 폴더의 ${DEFAULT_FILES.dim}, ${DEFAULT_FILES.relation}를 자동으로 불러왔습니다.`
-        };
-      } catch (_error) {
-        if (!(dimFile.files.length && relationFile.files.length)) {
-          throw new Error("Local CSV auto load failed.");
-        }
-      }
-
       const [unitText, relationText] = await Promise.all([
-        readFile(dimFile.files[0]),
-        readFile(relationFile.files[0])
+        fetchCsvText(DEFAULT_FILES.dim),
+        fetchCsvText(DEFAULT_FILES.relation)
       ]);
       return {
         unitText,
-        relationText,
-        sourceLabel: "선택한 CSV 파일로 변경 이력을 불러왔습니다."
+        relationText
       };
     }
 
@@ -566,19 +751,11 @@
       const years = unique(state.relations.map(row => row.year)).sort((a, b) => a - b);
       fillSelect(startYear, years);
       fillSelect(endYear, years);
-      startYear.value = years[0] || "";
-      endYear.value = years[years.length - 1] || "";
-      fillSelect(typeFilter, unique(state.relations.map(row => row.type)).sort(), true, CHANGE_TYPE_LABELS);
+      state.defaultStartYear = years.includes(2022) ? "2022" : String(years[0] || "");
+      state.defaultEndYear = String(years[years.length - 1] || "");
+      startYear.value = state.defaultStartYear;
+      endYear.value = state.defaultEndYear;
       render();
-    }
-
-    function readFile(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ""));
-        reader.onerror = reject;
-        reader.readAsText(file, "utf-8");
-      });
     }
 
     function parseCsv(text) {
@@ -645,18 +822,25 @@
       });
     }
 
+    function resetFilters() {
+      startYear.value = state.defaultStartYear;
+      endYear.value = state.defaultEndYear;
+      searchBox.value = "";
+      state.selectedNodeKey = "";
+      hideDetailPanel();
+      render();
+    }
+
     function render() {
       if (!state.relations.length) return;
 
       const from = Number(startYear.value);
       const to = Number(endYear.value);
-      const selectedType = typeFilter.value;
       const minYear = Math.min(from, to);
       const maxYear = Math.max(from, to);
 
       const relations = state.relations
         .filter(row => row.year >= minYear && row.year <= maxYear)
-        .filter(row => !selectedType || row.type === selectedType)
         .filter(row => row.source && row.target);
 
       const allSnapshots = buildSnapshots();
@@ -665,31 +849,37 @@
       const context = buildLayoutContext(relations, years, allSnapshots);
       const lanes = context.lanes;
 
-      const wrapPad = 32;
-      const canvasWidth = Math.max(800, document.documentElement.clientWidth - 2 * wrapPad);
-      const canvasPad = 48;
-      const nodeHalf = 89;
-      const firstColX = canvasPad + nodeHalf;
+      const canvasWidth = Math.max(
+        LAYOUT.minCanvasWidth,
+        document.documentElement.clientWidth - 2 * LAYOUT.wrapPadding
+      );
+      const firstColX = LAYOUT.canvasPadding + LAYOUT.nodeHalfWidth;
       const colStep = years.length > 1
-        ? Math.max(200, Math.floor((canvasWidth - 2 * canvasPad - 2 * nodeHalf) / (years.length - 1)))
-        : 200;
-      const width = years.length > 1
-        ? Math.max(canvasWidth, firstColX + (years.length - 1) * colStep + nodeHalf + canvasPad)
+        ? Math.max(
+          LAYOUT.minColumnStep,
+          Math.floor((canvasWidth - 2 * LAYOUT.canvasPadding - 2 * LAYOUT.nodeHalfWidth) / (years.length - 1))
+        )
+        : LAYOUT.minColumnStep;
+      const graphWidth = years.length > 1
+        ? Math.max(canvasWidth, firstColX + (years.length - 1) * colStep + LAYOUT.nodeHalfWidth + LAYOUT.canvasPadding)
         : canvasWidth;
+      const width = graphWidth + LAYOUT.detailPanelGap + LAYOUT.detailPanelWidth + LAYOUT.canvasPadding;
 
-      const maxY = Math.max(...[...context.yByNode.values()], 760);
-      const height = Math.max(920, maxY + 110);
+      const maxY = Math.max(...[...context.yByNode.values()], LAYOUT.minContentHeight);
+      const height = Math.max(LAYOUT.minCanvasHeight, maxY + LAYOUT.canvasBottomPadding);
 
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
+      flowContent.style.width = `${width}px`;
+      yearTrack.style.width = `${width}px`;
+      detailPanel.style.left = `${graphWidth + LAYOUT.detailPanelGap}px`;
       svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
       svg.setAttribute("width", width);
       svg.setAttribute("height", height);
 
-      canvas.querySelectorAll(".node,.year-label,.group-label,.dept-box").forEach(el => el.remove());
+      canvas.querySelectorAll(".node,.group-label,.dept-box").forEach(el => el.remove());
+      yearTrack.querySelectorAll(".year-label").forEach(el => el.remove());
       clearSvg();
-
-      subtitle.textContent = `${minYear}~${maxYear}학년도 변경 ${relations.length.toLocaleString()}건`;
 
       const xByYear = new Map();
       years.forEach((year, index) => {
@@ -699,11 +889,8 @@
         label.className = "year-label";
         label.style.left = `${x}px`;
         label.textContent = `${year}학년도`;
-        canvas.appendChild(label);
+        yearTrack.appendChild(label);
       });
-
-      const heading = canvas.querySelector(".heading");
-      if (heading) heading.style.left = `${canvasPad}px`;
 
       const nodeMap = new Map();
       years.forEach(year => {
@@ -717,7 +904,7 @@
             path: context.pathByNode.get(nodeKey(year, code)) || pathFromUnit(code),
             group: context.groupByNode.get(nodeKey(year, code)) || topCollegeCode(code),
             x: xByYear.get(year),
-            y: context.yByNode.get(nodeKey(year, code)) || 180 + laneIndex * 104
+            y: context.yByNode.get(nodeKey(year, code)) || LAYOUT.layoutTop + laneIndex * LAYOUT.nodeFallbackStep
           };
           nodeMap.set(nodeKey(year, code), node);
         });
@@ -742,6 +929,7 @@
       drawEdges();
       empty.style.display = state.edges.length ? "none" : "grid";
       state.nodes = [...nodeMap.values()];
+      syncYearHeader();
       applySearch();
     }
 
@@ -867,38 +1055,37 @@
 
     function buildYPositions(lanes, pathByNode, groupByNode, years) {
       const yByNode = new Map();
-      const top = 180;
-      const nodeStep = 84;
-      const boxPadding = 44;
-      const minGroupGap = 22;
       const groupsByYear = new Map();
       const totalHeightByYear = new Map();
 
       years.forEach(year => {
         const groups = groupLaneItems(lanes.get(year) || [], year, pathByNode, groupByNode);
         groupsByYear.set(year, groups);
-        const groupHeights = groups.map(group => groupHeight(group, nodeStep, boxPadding));
+        const groupHeights = groups.map(group => groupHeight(group));
         const totalHeight = groupHeights.reduce((sum, height) => sum + height, 0) +
-          Math.max(0, groups.length - 1) * minGroupGap;
+          Math.max(0, groups.length - 1) * LAYOUT.minGroupGap;
         totalHeightByYear.set(year, totalHeight);
       });
 
-      const maxHeight = Math.max(...totalHeightByYear.values(), 760);
+      const maxHeight = Math.max(...totalHeightByYear.values(), LAYOUT.minContentHeight);
 
       lanes.forEach((items, year) => {
         const groups = groupsByYear.get(year) || [];
         if (!groups.length) return;
 
-        const groupHeights = groups.map(group => groupHeight(group, nodeStep, boxPadding));
+        const groupHeights = groups.map(group => groupHeight(group));
         const usedHeight = groupHeights.reduce((sum, height) => sum + height, 0);
         const gap = groups.length > 1
-          ? Math.max(minGroupGap, (maxHeight - usedHeight) / (groups.length - 1))
+          ? Math.min(
+            LAYOUT.maxGroupGap,
+            Math.max(LAYOUT.minGroupGap, (maxHeight - usedHeight) / (groups.length - 1))
+          )
           : 0;
-        let boxTop = top + (groups.length === 1 ? (maxHeight - usedHeight) / 2 : 0);
+        let boxTop = LAYOUT.layoutTop + (groups.length === 1 ? (maxHeight - usedHeight) / 2 : 0);
 
         groups.forEach((group, groupIndex) => {
           group.codes.forEach((code, index) => {
-            yByNode.set(nodeKey(year, code), boxTop + boxPadding + index * nodeStep);
+            yByNode.set(nodeKey(year, code), boxTop + LAYOUT.deptBoxPadding + index * LAYOUT.nodeStep);
           });
           boxTop += groupHeights[groupIndex] + gap;
         });
@@ -906,8 +1093,11 @@
       return yByNode;
     }
 
-    function groupHeight(group, nodeStep, boxPadding) {
-      return Math.max(88, Math.max(0, group.codes.length - 1) * nodeStep + boxPadding * 2);
+    function groupHeight(group) {
+      return Math.max(
+        LAYOUT.deptBoxMinHeight,
+        Math.max(0, group.codes.length - 1) * LAYOUT.nodeStep + LAYOUT.deptBoxPadding * 2
+      );
     }
 
     function groupLaneItems(items, year, pathByNode, groupByNode) {
@@ -1016,15 +1206,14 @@
       const div = document.createElement("div");
       const type = node.unit.type || "department";
       div.className = `node ${type}`;
-      div.style.left = `${node.x - 89}px`;
-      div.style.top = `${node.y - 35}px`;
+      div.style.left = `${node.x - LAYOUT.nodeHalfWidth}px`;
+      div.style.top = `${node.y - LAYOUT.nodeHalfHeight}px`;
       div.dataset.nodeKey = nodeKey(node.year, node.code);
       div.dataset.code = node.code;
-      div.dataset.search = `${node.year} ${node.code} ${node.unit.name} ${node.unit.type} ${pathLabel(node.path)}`.toLowerCase();
+      div.dataset.search = `${node.year} ${node.code} ${node.unit.name} ${fullDisplayNameForNode(node)} ${node.unit.type} ${pathLabel(node.path)}`.toLowerCase();
       div.innerHTML = `
         <div class="node-inner">
           <span class="node-title">${escapeHtml(displayNameForNode(node))}</span>
-          <span class="node-path">${escapeHtml(parentPathLabel(node.path))}</span>
         </div>
       `;
       div.addEventListener("mouseenter", event => showTooltip(event, node));
@@ -1071,9 +1260,9 @@
         if (!group.hasMajor && group.count < 2) return;
         const box = document.createElement("div");
         box.className = "dept-box";
-        box.style.left = `${group.x - 107}px`;
-        box.style.top = `${group.minY - 44}px`;
-        box.style.height = `${Math.max(88, group.maxY - group.minY + 88)}px`;
+        box.style.left = `${group.x - LAYOUT.deptBoxHalfWidth}px`;
+        box.style.top = `${group.minY - LAYOUT.deptBoxPadding}px`;
+        box.style.height = `${Math.max(LAYOUT.deptBoxMinHeight, group.maxY - group.minY + LAYOUT.deptBoxMinHeight)}px`;
         box.dataset.nodeKeys = group.nodeKeys.join(" ");
         box.dataset.search = `${group.deptCode} ${labelOf(group.deptCode)}`.toLowerCase();
         box.innerHTML = `<div class="dept-box-title">${escapeHtml(labelOf(group.deptCode))}</div>`;
@@ -1092,7 +1281,7 @@
         lastGroup = group;
         const label = document.createElement("div");
         label.className = "group-label";
-        label.style.top = `${(context.yByNode.get(key) || 180) - 38}px`;
+        label.style.top = `${(context.yByNode.get(key) || LAYOUT.groupLabelFallbackY) - LAYOUT.groupLabelYOffset}px`;
         label.textContent = labelOf(group);
         canvas.appendChild(label);
       });
@@ -1100,9 +1289,9 @@
 
     function drawEdges() {
       state.edges.forEach(edge => {
-        const sx = edge.sourceNode.x + 90;
+        const sx = edge.sourceNode.x + LAYOUT.edgeAnchorOffset;
         const sy = edge.sourceNode.y;
-        const tx = edge.targetNode.x - 90;
+        const tx = edge.targetNode.x - LAYOUT.edgeAnchorOffset;
         const ty = edge.targetNode.y;
         const mid = (sx + tx) / 2;
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -1111,7 +1300,7 @@
         path.dataset.sourceKey = nodeKey(edge.sourceYear, edge.source);
         path.dataset.targetKey = nodeKey(edge.targetYear, edge.target);
         path.dataset.search = `${edge.year} ${edge.type} ${edge.source} ${edge.target} ${labelOf(edge.source)} ${labelOf(edge.target)}`.toLowerCase();
-        const cp2x = tx - Math.min(70, (tx - sx) * 0.28);
+        const cp2x = tx - Math.min(LAYOUT.edgeControlMaxOffset, (tx - sx) * 0.28);
         const cp2y = ty - (ty - sy) * 0.28;
         path.setAttribute("d", `M ${sx} ${sy} C ${mid} ${sy}, ${cp2x} ${cp2y}, ${tx} ${ty}`);
         svg.appendChild(path);
@@ -1119,7 +1308,7 @@
         const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
         label.setAttribute("class", `edge-label ${edge.type}`);
         label.setAttribute("x", mid);
-        label.setAttribute("y", (sy + ty) / 2 - 8);
+        label.setAttribute("y", (sy + ty) / 2 - LAYOUT.edgeLabelYOffset);
         label.setAttribute("text-anchor", "middle");
         label.dataset.edgeId = edge.id;
         label.dataset.search = path.dataset.search;
@@ -1141,10 +1330,10 @@
       const connected = selected ? connectedNodeKeys(selected) : new Set();
 
       nodes.forEach(node => {
-        node.classList.remove("focus", "dimmed");
+        node.classList.remove("focus", "related", "dimmed");
       });
       boxes.forEach(box => {
-        box.classList.remove("focus", "dimmed");
+        box.classList.remove("focus", "related", "dimmed");
       });
       edges.forEach(edge => {
         edge.classList.remove("focus", "dimmed");
@@ -1171,7 +1360,10 @@
         });
       }
 
-      if (!term) return;
+      if (!term) {
+        updateDetailPanel();
+        return;
+      }
 
       const matchedKeys = new Set();
       nodes.forEach(node => {
@@ -1179,26 +1371,42 @@
         if (hit) matchedKeys.add(node.dataset.nodeKey);
       });
 
+      const relatedKeys = new Set(matchedKeys);
+      const activeEdgeIds = new Set();
+      edges.forEach(edge => {
+        const sourceKey = edge.dataset.sourceKey;
+        const targetKey = edge.dataset.targetKey;
+        const edgeHit = edge.dataset.search.includes(term);
+        const touchesMatchedNode = matchedKeys.has(sourceKey) || matchedKeys.has(targetKey);
+        if (!edgeHit && !touchesMatchedNode) return;
+        if (edge.dataset.edgeId) activeEdgeIds.add(edge.dataset.edgeId);
+        if (sourceKey) relatedKeys.add(sourceKey);
+        if (targetKey) relatedKeys.add(targetKey);
+      });
+
       nodes.forEach(node => {
-        const hit = matchedKeys.has(node.dataset.nodeKey);
-        node.classList.toggle("focus", hit);
-        node.classList.toggle("dimmed", !hit);
+        const directHit = matchedKeys.has(node.dataset.nodeKey);
+        const relatedHit = relatedKeys.has(node.dataset.nodeKey);
+        node.classList.toggle("focus", directHit);
+        node.classList.toggle("related", !directHit && relatedHit);
+        node.classList.toggle("dimmed", !relatedHit);
       });
 
       boxes.forEach(box => {
         const keys = box.dataset.nodeKeys.split(" ").filter(Boolean);
-        const hit = box.dataset.search.includes(term) || keys.some(key => matchedKeys.has(key));
-        box.classList.toggle("focus", hit || box.classList.contains("focus"));
-        box.classList.toggle("dimmed", !hit);
+        const directHit = box.dataset.search.includes(term) || keys.some(key => matchedKeys.has(key));
+        const relatedHit = directHit || keys.some(key => relatedKeys.has(key));
+        box.classList.toggle("focus", directHit || box.classList.contains("focus"));
+        box.classList.toggle("related", !directHit && relatedHit);
+        box.classList.toggle("dimmed", !relatedHit);
       });
 
       edges.forEach(edge => {
-        const hit = edge.dataset.search.includes(term) ||
-          matchedKeys.has(edge.dataset.sourceKey) ||
-          matchedKeys.has(edge.dataset.targetKey);
+        const hit = activeEdgeIds.has(edge.dataset.edgeId);
         edge.classList.toggle("focus", hit || edge.classList.contains("focus"));
         edge.classList.toggle("dimmed", !hit);
       });
+      updateDetailPanel();
     }
 
     function connectedNodeKeys(startKey) {
@@ -1223,21 +1431,146 @@
     }
 
     function showTooltip(event, node) {
+      const type = UNIT_TYPE_LABELS[node.unit.type] || node.unit.type || "조직";
+      const title = fullDisplayNameForNode(node);
       const relatedEdge = state.edges.find(edge =>
         edge.source === node.code &&
         edge.sourceYear === node.year &&
         edge.validUntil &&
         ["closed", "splitted", "merged", "renewed"].includes(edge.type)
       );
-      if (!relatedEdge) return;
-      const validUntil = relatedEdge.validUntil;
-      const message = validUntil === "9999"
-        ? "현 재적생이 졸업할 때까지 유지"
-        : `${escapeHtml(validUntil)}학년도 졸업자까지 유지`;
-      const noteLine = relatedEdge.note ? `<br><span style="color:var(--muted)">${escapeHtml(relatedEdge.note)}</span>` : "";
-      tooltip.innerHTML = `<strong>${escapeHtml(node.unit.name || node.code)}</strong><br>${message}${noteLine}`;
+      const retainMessage = relatedEdge
+        ? `<br><span style="color:var(--muted)">${escapeHtml(title)}은 ${escapeHtml(retentionLabel(relatedEdge.validUntil))}</span>`
+        : "";
+      tooltip.innerHTML = `
+        <strong>${escapeHtml(title)}</strong><br>
+        ${escapeHtml(node.year)}학년도 · ${escapeHtml(type)}<br>
+        <span style="color:var(--muted)">${escapeHtml(node.code)}</span>${retainMessage}
+      `;
       tooltip.style.display = "block";
       moveTooltip(event);
+    }
+
+    function updateDetailPanel() {
+      if (!state.selectedNodeKey) {
+        hideDetailPanel();
+        return;
+      }
+
+      const node = state.nodes.find(item => nodeKey(item.year, item.code) === state.selectedNodeKey);
+      if (!node) {
+        state.selectedNodeKey = "";
+        hideDetailPanel();
+        return;
+      }
+
+      const incoming = state.edges.filter(edge => nodeKey(edge.targetYear, edge.target) === state.selectedNodeKey);
+      const outgoing = state.edges.filter(edge => nodeKey(edge.sourceYear, edge.source) === state.selectedNodeKey);
+      const type = UNIT_TYPE_LABELS[node.unit.type] || node.unit.type || "조직";
+      const title = fullDisplayNameForNode(node);
+      const parentPath = parentPathLabel(node.path);
+      const fullPath = pathLabel(node.path);
+
+      detailPanel.innerHTML = `
+        <div class="detail-head">
+          <div>
+            <h2 class="detail-title">${escapeHtml(title)}</h2>
+            <div class="detail-subtitle">${escapeHtml(node.year)}학년도 · ${escapeHtml(type)}</div>
+          </div>
+          <button class="detail-close" type="button" aria-label="상세 닫기">닫기</button>
+        </div>
+        <div class="detail-body">
+          <section class="detail-section">
+            <div class="detail-section-title">기본 정보</div>
+            <dl class="detail-list">
+              ${detailRow("코드", node.code)}
+              ${detailRow("상위", parentPath || "-")}
+              ${detailRow("경로", fullPath || "-")}
+            </dl>
+          </section>
+          ${relationSection("이전 연결", incoming, "incoming")}
+          ${relationSection("다음 연결", outgoing, "outgoing")}
+        </div>
+      `;
+      detailPanel.querySelector(".detail-close").addEventListener("click", () => {
+        state.selectedNodeKey = "";
+        hideDetailPanel();
+        applySearch();
+      });
+      detailPanel.classList.add("is-open");
+      revealDetailPanel();
+    }
+
+    function hideDetailPanel() {
+      detailPanel.classList.remove("is-open");
+      detailPanel.innerHTML = "";
+    }
+
+    function revealDetailPanel() {
+      detailPanel.style.top = `${canvasWrap.scrollTop + 18}px`;
+      const targetLeft = Math.max(
+        0,
+        detailPanel.offsetLeft + LAYOUT.detailPanelWidth + 24 - canvasWrap.clientWidth
+      );
+      if (canvasWrap.scrollLeft < targetLeft) {
+        canvasWrap.scrollTo({ left: targetLeft, behavior: "smooth" });
+      }
+    }
+
+    function detailRow(label, value) {
+      return `
+        <div class="detail-row">
+          <dt>${escapeHtml(label)}</dt>
+          <dd>${escapeHtml(value)}</dd>
+        </div>
+      `;
+    }
+
+    function relationSection(title, edges, direction) {
+      const items = edges
+        .sort((a, b) => relationSortValue(a) - relationSortValue(b))
+        .map(edge => relationItem(edge, direction))
+        .join("");
+      return `
+        <section class="detail-section">
+          <div class="detail-section-title">${escapeHtml(title)}</div>
+          <ul class="relation-list">
+            ${items || '<li class="relation-card relation-note">연결 정보 없음</li>'}
+          </ul>
+        </section>
+      `;
+    }
+
+    function relationItem(edge, direction) {
+      const otherCode = direction === "incoming" ? edge.source : edge.target;
+      const otherYear = direction === "incoming" ? edge.sourceYear : edge.targetYear;
+      const validUntil = edge.validUntil && edge.validUntil !== "9999"
+        ? ` · ${escapeHtml(retentionLabel(edge.validUntil))}`
+        : "";
+      const note = edge.note ? `<div class="relation-note">${escapeHtml(edge.note)}</div>` : "";
+      return `
+        <li class="relation-card">
+          <div><span class="relation-kind">${escapeHtml(changeTypeLabel(edge.type))}</span>${validUntil}</div>
+          <div>${escapeHtml(otherYear)}학년도 · ${escapeHtml(displayNameForKey(otherYear, otherCode))}</div>
+          <div class="relation-meta">${escapeHtml(otherCode || "-")}</div>
+          ${note}
+        </li>
+      `;
+    }
+
+    function relationSortValue(edge) {
+      return edge.type === "unchanged" ? 1 : 0;
+    }
+
+    function changeTypeLabel(type) {
+      if (type === "unchanged") return "유지";
+      return CHANGE_TYPE_LABELS[type] ?? type;
+    }
+
+    function retentionLabel(validUntil) {
+      return validUntil === "9999"
+        ? "현 재적생이 졸업할 때까지 유지"
+        : `${validUntil}학년도 졸업자까지 유지`;
     }
 
     function moveTooltip(event) {
@@ -1299,10 +1632,22 @@
     }
 
     function displayNameForNode(node) {
-      if (node.unit.type === "major") return shortLabel(node.unit.name || node.code);
-      if (majorCodeFromPath(node.path)) return shortLabel(labelOf(majorCodeFromPath(node.path)));
-      if (node.unit.type === "department") return shortLabel(node.unit.name || node.code);
       return shortLabel(node.unit.name || node.code);
+    }
+
+    function fullDisplayNameForNode(node) {
+      const name = node.unit.name || node.code;
+      if (node.unit.type !== "major") return name;
+
+      const deptCode = deptCodeFromPath(node.path);
+      const deptName = deptCode ? labelOf(deptCode) : "";
+      return deptName.endsWith("학부") ? `${deptName}(${name})` : name;
+    }
+
+    function displayNameForKey(year, code) {
+      const node = state.nodes.find(item => item.year === year && item.code === code);
+      if (node) return fullDisplayNameForNode(node);
+      return labelOf(code) || code || "-";
     }
 
     function shortLabel(value) {
