@@ -8,37 +8,39 @@
     @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css");
 
     :root {
-      --ink: #171410;
-      --ink-soft: #443d35;
-      --muted: #6f655b;
-      --line: #ddd6cd;
+      --ink: #000000;
+      --ink-soft: #31302e;
+      --paper: #f6f5f4;
       --panel: #ffffff;
-      --paper: #f6f2ec;
-      --soft: #fbf8f4;
-      --accent: #0a67c2;
-      --accent-soft: #edf4fb;
-      --danger: #ba3f3f;
-      --danger-soft: #fbefef;
-      --success: #17754b;
-      --success-soft: #eef8f2;
-      --shadow: 0 18px 48px rgba(18, 16, 12, 0.06);
-      --page-width: 1440px;
+      --canvas: #ffffff;
+      --line: #615d59;
+      --muted: #615d59;
+      --faint: #a39e98;
+      --hairline: #e6e6e6;
+      --accent: #0075de;
+      --accent-active: #005bab;
+      --created: #1aae39;
+      --revised: #005bab;
+      --renewed: #7b61d1;
+      --closed: #d64545;
+      --merged: #dd5b00;
+      --splitted: #2a9d99;
+      --page-max-width: 1680px;
+      --page-gutter: 18px;
     }
 
     * { box-sizing: border-box; }
 
-    body {
+    html, body {
       margin: 0;
-      font-family: "Pretendard Variable", "Pretendard", "Segoe UI", "Malgun Gothic", sans-serif;
+      background: var(--paper);
       color: var(--ink);
-      background:
-        radial-gradient(circle at top left, rgba(10, 103, 194, 0.08), transparent 24%),
-        linear-gradient(180deg, #f9f6f2 0%, #f3efe9 100%);
+      font-family: "Pretendard Variable", "Pretendard", "Segoe UI", "Malgun Gothic", sans-serif;
+      font-weight: 400;
     }
 
-    a {
-      color: inherit;
-      text-decoration: none;
+    body {
+      min-height: 100vh;
     }
 
     button,
@@ -47,305 +49,329 @@
       font: inherit;
     }
 
-    .page-header {
+    .app-header {
       position: sticky;
       top: 0;
-      z-index: 20;
-      border-bottom: 1px solid var(--line);
-      background: rgba(246, 242, 236, 0.92);
-      backdrop-filter: blur(14px);
+      z-index: 30;
+      background: rgba(246, 245, 244, 0.94);
+      border-bottom: 1px solid var(--hairline);
+      backdrop-filter: blur(10px);
     }
 
-    .header-shell,
+    .app-titlebar,
     .page-shell {
-      width: min(calc(100% - 32px), var(--page-width));
+      width: min(calc(100% - 2 * var(--page-gutter)), var(--page-max-width));
       margin: 0 auto;
     }
 
-    .header-shell {
-      display: flex;
+    .app-titlebar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
       align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 16px 0;
+      gap: 12px;
+      padding: 14px 18px;
     }
 
     .brand {
-      display: grid;
-      gap: 4px;
-    }
-
-    .eyebrow {
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      min-width: 0;
     }
 
     h1 {
       margin: 0;
-      font-size: 24px;
-      line-height: 1.2;
-    }
-
-    .header-copy {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .header-link,
-    button,
-    .year-chip {
-      min-height: 38px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--panel);
-      color: var(--ink);
-    }
-
-    .header-link {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 14px;
+      font-size: 19px;
+      letter-spacing: 0;
       white-space: nowrap;
     }
 
-    button {
-      padding: 0 14px;
-      cursor: pointer;
+    .brand-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
     }
 
-    button.primary {
-      border-color: var(--accent);
-      background: var(--accent);
-      color: #fff;
-      font-weight: 700;
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
     }
 
-    button.subtle {
-      background: var(--soft);
+    .toolbar label,
+    .field-label,
+    .summary-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
     }
 
-    button:disabled {
-      cursor: not-allowed;
-      opacity: 0.55;
+    .toolbar label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .toolbar select,
+    .action-link,
+    .icon-button,
+    .primary-button,
+    .ghost-button,
+    .tag-toggle {
+      min-height: 34px;
+      border: 1px solid var(--hairline);
+      border-radius: 0;
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .toolbar select,
+    .search-row input,
+    .year-input {
+      min-height: 34px;
+      border: 1px solid var(--hairline);
+      border-radius: 0;
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 13px;
+      padding: 6px 8px;
+    }
+
+    .action-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      text-decoration: none;
+      white-space: nowrap;
+      font-weight: 600;
     }
 
     .page-shell {
       padding: 24px 0 40px;
     }
 
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.92fr);
-      gap: 18px;
-      align-items: start;
-    }
-
-    .column {
+    .stack {
       display: grid;
       gap: 18px;
-      min-width: 0;
     }
 
-    .panel {
-      border: 1px solid var(--line);
-      border-radius: 8px;
+    .surface {
+      border: 1px solid var(--hairline);
+      border-radius: 0;
       background: rgba(255, 255, 255, 0.94);
-      box-shadow: var(--shadow);
       overflow: hidden;
     }
 
-    .panel-head {
+    .surface-head {
       display: flex;
       align-items: start;
       justify-content: space-between;
       gap: 12px;
-      padding: 18px 20px 14px;
-      border-bottom: 1px solid var(--line);
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--hairline);
     }
 
-    .panel-title {
+    .surface-title {
       margin: 0;
-      font-size: 17px;
-      line-height: 1.3;
-    }
-
-    .panel-subtitle {
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .panel-body {
-      display: grid;
-      gap: 18px;
-      padding: 18px 20px 20px;
-    }
-
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .step-card {
-      padding: 12px 14px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--soft);
-      display: grid;
-      gap: 6px;
-    }
-
-    .step-index {
-      color: var(--accent);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    .step-title {
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .step-copy {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .field-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .field {
-      display: grid;
-      gap: 6px;
-      min-width: 0;
-    }
-
-    .field.wide {
-      grid-column: 1 / -1;
-    }
-
-    .label {
-      color: var(--muted);
-      font-size: 12px;
+      font-size: 16px;
       font-weight: 600;
+      line-height: 1.35;
     }
 
-    input,
-    select {
-      width: 100%;
-      min-height: 40px;
-      padding: 9px 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-      color: var(--ink);
-    }
-
-    .year-summary {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--soft);
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .year-chip {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 10px;
-      font-size: 12px;
-      font-weight: 700;
-      background: #fff;
-      white-space: nowrap;
-    }
-
-    .endpoint-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .endpoint-panel {
-      display: grid;
-      gap: 12px;
-      min-width: 0;
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--soft);
-    }
-
-    .endpoint-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .endpoint-title {
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .endpoint-helper {
+    .surface-copy {
+      margin-top: 4px;
       color: var(--muted);
       font-size: 12px;
       line-height: 1.45;
     }
 
-    .search-box,
-    .search-results,
+    .surface-body {
+      display: grid;
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .summary-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 12px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .summary-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .summary-status {
+      min-height: 24px;
+      padding: 0 10px;
+      border-radius: 99px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      background: var(--ink);
+      color: var(--panel);
+    }
+
+    .summary-status.is-created { background: var(--created); }
+    .summary-status.is-revised { background: var(--revised); }
+    .summary-status.is-renewed { background: var(--renewed); }
+    .summary-status.is-closed { background: var(--closed); }
+    .summary-status.is-merged { background: var(--merged); }
+    .summary-status.is-splitted { background: var(--splitted); }
+    .summary-status.is-pending {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--hairline);
+    }
+    .summary-status.is-invalid {
+      background: #fff1df;
+      color: #b96800;
+      border: 1px solid #f2d1a2;
+    }
+
+    .type-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tag-toggle {
+      padding: 0 10px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .tag-toggle.is-active {
+      border-color: var(--ink);
+      background: var(--ink);
+      color: var(--panel);
+      font-weight: 600;
+    }
+
+    .editor-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      align-items: start;
+    }
+
+    .editor-column {
+      display: grid;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .column-card {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid var(--hairline);
+      background: var(--panel);
+      min-width: 0;
+    }
+
+    .column-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .column-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .column-hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .search-block {
+      display: grid;
+      gap: 8px;
+    }
+
+    .search-row,
+    .retain-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .year-input-wrap {
+      display: grid;
+      gap: 6px;
+    }
+
+    .icon-button,
+    .ghost-button,
+    .primary-button {
+      padding: 0 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .icon-button,
+    .ghost-button {
+      background: var(--panel);
+      color: var(--ink);
+    }
+
+    .primary-button {
+      border-color: var(--ink);
+      background: var(--ink);
+      color: var(--panel);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      border-color: var(--faint);
+      background: var(--panel);
+      color: var(--faint);
+    }
+
     .selected-list,
-    .preview-list,
     .recent-list {
       display: grid;
       gap: 8px;
     }
 
-    .search-results {
-      max-height: 280px;
-      overflow: auto;
+    .empty {
+      padding: 12px;
+      border: 1px dashed var(--hairline);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      background: #fcfcfc;
     }
 
-    .search-item,
     .selected-item,
-    .preview-item,
     .recent-item {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-      padding: 10px 12px;
+      border: 1px solid var(--hairline);
+      background: var(--panel);
+      padding: 12px;
       min-width: 0;
     }
 
-    .search-item,
-    .selected-item,
-    .recent-item {
-      display: grid;
-      gap: 8px;
-    }
-
-    .search-top,
     .selected-top,
     .recent-top {
       display: flex;
@@ -355,13 +381,12 @@
       min-width: 0;
     }
 
-    .search-name,
     .selected-name,
     .recent-title {
       min-width: 0;
       font-size: 13px;
-      font-weight: 700;
-      line-height: 1.4;
+      font-weight: 600;
+      line-height: 1.45;
       word-break: keep-all;
       overflow-wrap: anywhere;
     }
@@ -369,38 +394,31 @@
     .meta-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
+      gap: 6px 8px;
+      margin-top: 8px;
       color: var(--muted);
       font-size: 12px;
-      line-height: 1.5;
+      line-height: 1.45;
     }
 
-    .badge {
+    .meta-chip {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
       min-height: 22px;
       padding: 0 8px;
-      border-radius: 999px;
-      background: var(--ink);
-      color: #fff;
+      border: 1px solid var(--hairline);
+      border-radius: 99px;
+      background: var(--panel);
+      color: var(--ink);
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 600;
       white-space: nowrap;
     }
 
-    .badge.soft {
-      background: var(--accent-soft);
-      color: var(--accent);
-    }
-
-    .badge.warn {
-      background: #fff1df;
-      color: #b96800;
-    }
-
-    .path {
+    .path-copy,
+    .recent-copy,
+    .preview-copy {
+      margin-top: 8px;
       color: var(--muted);
       font-size: 12px;
       line-height: 1.5;
@@ -408,83 +426,63 @@
       overflow-wrap: anywhere;
     }
 
-    .empty {
-      padding: 12px;
-      border: 1px dashed var(--line);
-      border-radius: 8px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
-      background: rgba(255, 255, 255, 0.6);
-    }
-
-    .preview-card {
+    .preview-box {
       display: grid;
-      gap: 14px;
+      gap: 10px;
+      padding: 14px 16px;
+      border: 1px solid var(--hairline);
+      background: #fcfcfc;
     }
 
-    .preview-sentence {
-      padding: 14px;
-      border-radius: 8px;
-      background: var(--accent-soft);
-      font-size: 14px;
-      font-weight: 700;
-      line-height: 1.6;
-    }
-
-    .preview-meta {
-      display: grid;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.55;
-    }
-
-    .preview-copy,
-    .recent-copy {
+    .preview-title {
       font-size: 13px;
-      line-height: 1.55;
-      word-break: keep-all;
-      overflow-wrap: anywhere;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+
+    .feedback {
+      display: grid;
+      gap: 10px;
     }
 
     .error-box,
     .status-box {
       padding: 12px 14px;
-      border-radius: 8px;
+      border: 1px solid var(--hairline);
       font-size: 12px;
       line-height: 1.55;
     }
 
     .error-box {
-      border: 1px solid #efcccc;
-      background: var(--danger-soft);
-      color: var(--danger);
+      background: #fff4f4;
+      color: var(--closed);
+      border-color: #f0cccc;
     }
 
     .status-box {
-      border: 1px solid #d0e8d9;
-      background: var(--success-soft);
-      color: var(--success);
+      background: #f4fbf6;
+      color: #17754b;
+      border-color: #cfe5d6;
     }
 
-    .actions {
+    .action-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
+      padding-top: 6px;
     }
 
     .action-copy {
       color: var(--muted);
       font-size: 12px;
-      line-height: 1.5;
+      line-height: 1.45;
     }
 
     .action-buttons {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
@@ -493,231 +491,247 @@
     }
 
     @media (max-width: 1120px) {
-      .layout {
+      .app-titlebar {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .toolbar {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .editor-grid {
         grid-template-columns: 1fr;
       }
     }
 
     @media (max-width: 760px) {
-      .header-shell,
-      .page-shell {
-        width: min(calc(100% - 24px), var(--page-width));
+      :root {
+        --page-gutter: 12px;
       }
 
-      .steps,
-      .field-grid,
-      .endpoint-grid {
+      .toolbar {
+        flex-wrap: wrap;
+      }
+
+      .toolbar label,
+      .toolbar select,
+      .action-link {
+        width: 100%;
+      }
+
+      .toolbar label {
+        display: grid;
+      }
+
+      .search-row,
+      .retain-row {
         grid-template-columns: 1fr;
       }
 
       .action-buttons,
-      .header-link,
-      button.primary,
-      button.subtle {
+      .ghost-button,
+      .primary-button {
         width: 100%;
       }
     }
   </style>
 </head>
 <body>
-  <header class="page-header">
-    <div class="header-shell">
+  <header class="app-header">
+    <div class="app-titlebar">
       <div class="brand">
-        <div class="eyebrow">Admin Workbench</div>
         <h1>편제개편 입력</h1>
-        <div class="header-copy">변경 학년도를 고르고, 변경 전 학과(전공)와 변경 후 학과(전공)를 연결합니다.</div>
+        <span class="brand-kicker">ADMIN</span>
       </div>
-      <a class="header-link" href="/index.html">흐름 보기로 돌아가기</a>
+      <div class="toolbar">
+        <label for="changeYear">
+          변경 학년도
+          <select id="changeYear"></select>
+        </label>
+      </div>
+      <a class="action-link" href="/index.html">편제 변경 이력 보기</a>
     </div>
   </header>
 
   <main class="page-shell">
-    <div class="layout">
-      <div class="column">
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">입력 순서</h2>
-              <div class="panel-subtitle">이 화면에서는 학년도별 묶음을 따로 만들지 않습니다. 변경 학년도를 고르면 바로 관계를 저장합니다.</div>
-            </div>
+    <div class="stack">
+      <section class="surface">
+        <div class="surface-head">
+          <div>
+            <h2 class="surface-title">변경 관계 입력</h2>
+            <div class="surface-copy" id="yearSummary"></div>
           </div>
-          <div class="panel-body">
-            <div class="steps">
-              <div class="step-card">
-                <div class="step-index">Step 1</div>
-                <div class="step-title">변경 학년도 선택</div>
-                <div class="step-copy">이 관계가 속하는 편제개편 학년도를 정합니다.</div>
-              </div>
-              <div class="step-card">
-                <div class="step-index">Step 2</div>
-                <div class="step-title">전후 단위 선택</div>
-                <div class="step-copy">변경 전 학과(전공)와 변경 후 학과(전공)를 선택합니다.</div>
-              </div>
-              <div class="step-card">
-                <div class="step-index">Step 3</div>
-                <div class="step-title">미리보기 확인 후 저장</div>
-                <div class="step-copy">저장 문장과 CSV 행 확장 수를 보고 저장합니다.</div>
-              </div>
+        </div>
+        <div class="surface-body">
+          <div class="summary-bar">
+            <span class="summary-label">변경구분</span>
+            <span class="summary-status is-pending" id="typeBadge">선택 대기</span>
+            <div class="type-switch hidden" id="typeSwitch">
+              <button class="tag-toggle is-active" type="button" data-type-choice="renewed">개편</button>
+              <button class="tag-toggle" type="button" data-type-choice="revised">명칭변경</button>
             </div>
+            <div class="summary-meta" id="summaryMeta">변경 전후 학과(전공)를 추가하면 저장 형태가 자동으로 결정됩니다.</div>
           </div>
-        </section>
 
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">기본 정보</h2>
-              <div class="panel-subtitle">현재 구조에서는 별도 이벤트 개념 없이 변경 학년도가 관계 묶음 역할을 합니다.</div>
-            </div>
-          </div>
-          <div class="panel-body">
-            <div class="field-grid">
-              <div class="field">
-                <label class="label" for="changeYear">변경 학년도</label>
-                <input id="changeYear" type="number" min="1900" step="1" placeholder="예: 2027">
-              </div>
-              <div class="field">
-                <label class="label" for="changeType">변경 유형</label>
-                <select id="changeType"></select>
-              </div>
-              <div class="field">
-                <label class="label" for="retainUntil">유지 학년도</label>
-                <input id="retainUntil" type="number" min="1900" step="1" placeholder="없으면 비움">
-              </div>
-              <div class="field wide">
-                <label class="label" for="relationNote">관계 메모</label>
-                <input id="relationNote" type="text" placeholder="필요한 경우에만 입력">
-              </div>
-            </div>
-            <div class="year-summary" id="yearSummary"></div>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">변경 관계</h2>
-              <div class="panel-subtitle">검색은 코드, 명칭, 소속 경로 기준으로 동작합니다.</div>
-            </div>
-          </div>
-          <div class="panel-body">
-            <div class="endpoint-grid">
-              <section class="endpoint-panel">
-                <div class="endpoint-head">
-                  <div class="endpoint-title">변경 전 학과(전공)</div>
-                  <span class="badge">전년도</span>
+          <div class="editor-grid">
+            <div class="editor-column">
+              <div class="column-card">
+                <div class="column-head">
+                  <h3 class="column-title">변경 전 학과 추가</h3>
+                  <button class="ghost-button" id="addPrevBtn" type="button">추가</button>
                 </div>
-                <div class="endpoint-helper" id="prevHelper"></div>
-                <div class="search-box">
-                  <input id="prevSearch" type="search" placeholder="코드, 명칭, 경로로 검색">
-                  <div class="search-results" id="prevResults"></div>
+                <div class="column-hint" id="prevHint">개편되기 전 기준의 학과(전공)를 선택합니다.</div>
+                <div class="search-block">
+                  <div class="search-row">
+                    <input id="prevInput" type="text" list="unitOptions" placeholder="학과명, 전공명, 코드 검색">
+                    <button class="icon-button" id="prevAddBtn" type="button">넣기</button>
+                  </div>
                 </div>
                 <div class="selected-list" id="prevSelected"></div>
-              </section>
+              </div>
+            </div>
 
-              <section class="endpoint-panel">
-                <div class="endpoint-head">
-                  <div class="endpoint-title">변경 후 학과(전공)</div>
-                  <span class="badge">다음연도</span>
+            <div class="editor-column">
+              <div class="column-card">
+                <div class="column-head">
+                  <h3 class="column-title">변경 후 학과 추가</h3>
+                  <button class="ghost-button" id="addAfterBtn" type="button">추가</button>
                 </div>
-                <div class="endpoint-helper" id="afterHelper"></div>
-                <div class="search-box">
-                  <input id="afterSearch" type="search" placeholder="코드, 명칭, 경로로 검색">
-                  <div class="search-results" id="afterResults"></div>
+                <div class="column-hint" id="afterHint">개편 이후 기준의 학과(전공)를 선택합니다.</div>
+                <div class="search-block">
+                  <div class="search-row">
+                    <input id="afterInput" type="text" list="unitOptions" placeholder="학과명, 전공명, 코드 검색">
+                    <button class="icon-button" id="afterAddBtn" type="button">넣기</button>
+                  </div>
+                  <div class="year-input-wrap">
+                    <label class="field-label" for="retainUntil">유지 학년도</label>
+                    <div class="retain-row">
+                      <input class="year-input" id="retainUntil" type="number" min="1900" step="1" placeholder="없으면 비움">
+                      <span class="summary-meta">예: 2028학년도 졸업자까지 유지</span>
+                    </div>
+                  </div>
                 </div>
                 <div class="selected-list" id="afterSelected"></div>
-              </section>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <div class="column">
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">저장 전 검토</h2>
-              <div class="panel-subtitle">저장 문장, 연도, CSV 행 확장 수를 함께 확인합니다.</div>
-            </div>
-          </div>
-          <div class="panel-body">
-            <div class="preview-card">
-              <div class="preview-sentence" id="previewSentence">변경 학년도와 관계를 선택하면 저장 문장이 여기에 나타납니다.</div>
-              <div class="preview-meta" id="previewMeta"></div>
-              <div class="preview-list" id="previewList"></div>
-            </div>
-            <div class="error-box hidden" id="errorBox"></div>
-            <div class="status-box hidden" id="statusBox"></div>
-            <div class="actions">
-              <div class="action-copy">저장 후에는 같은 학년도를 유지한 채 다음 관계를 이어서 입력할 수 있습니다.</div>
-              <div class="action-buttons">
-                <button class="subtle" id="resetRelationBtn" type="button">관계만 초기화</button>
-                <button class="primary" id="saveBtn" type="button">관계 저장</button>
               </div>
             </div>
           </div>
-        </section>
 
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">최근 입력</h2>
-              <div class="panel-subtitle">최근 저장된 관계를 연도 단위 기준으로 빠르게 확인합니다.</div>
+          <div class="preview-box">
+            <div class="preview-title" id="previewSentence">변경 전후 학과(전공)를 선택하면 저장 문장이 여기에 표시됩니다.</div>
+            <div class="preview-copy" id="previewMeta"></div>
+          </div>
+
+          <div class="feedback">
+            <div class="error-box hidden" id="errorBox"></div>
+            <div class="status-box hidden" id="statusBox"></div>
+          </div>
+
+          <div class="action-row">
+            <div class="action-copy">저장 후에는 같은 학년도에서 다음 변경 관계를 계속 입력할 수 있습니다.</div>
+            <div class="action-buttons">
+              <button class="ghost-button" id="resetRelationBtn" type="button">현재 입력 초기화</button>
+              <button class="primary-button" id="saveBtn" type="button">저장</button>
             </div>
           </div>
-          <div class="panel-body">
-            <div class="recent-list" id="recentList"></div>
+        </div>
+      </section>
+
+      <section class="surface">
+        <div class="surface-head">
+          <div>
+            <h2 class="surface-title">최근 입력</h2>
+            <div class="surface-copy">방금 저장한 관계를 포함해 최근 입력 내역을 확인합니다.</div>
           </div>
-        </section>
-      </div>
+        </div>
+        <div class="surface-body">
+          <div class="recent-list" id="recentList"></div>
+        </div>
+      </section>
     </div>
   </main>
 
+  <datalist id="unitOptions"></datalist>
+
   <script>
+    const CHANGE_TYPE_META = {
+      created: { label: '신설', badgeClass: 'is-created' },
+      closed: { label: '폐지', badgeClass: 'is-closed' },
+      merged: { label: '통합', badgeClass: 'is-merged' },
+      splitted: { label: '분리', badgeClass: 'is-splitted' },
+      renewed: { label: '개편', badgeClass: 'is-renewed' },
+      revised: { label: '명칭변경', badgeClass: 'is-revised' },
+      pending: { label: '선택 대기', badgeClass: 'is-pending' },
+      invalid: { label: '저장 불가', badgeClass: 'is-invalid' },
+    };
+
     const state = {
       bootstrap: null,
       units: [],
       unitsByCode: new Map(),
+      searchIndex: new Map(),
       selectedPrev: [],
       selectedAfter: [],
+      oneToOneType: 'renewed',
       isSubmitting: false,
     };
 
     const changeYear = document.getElementById('changeYear');
-    const changeType = document.getElementById('changeType');
-    const retainUntil = document.getElementById('retainUntil');
-    const relationNote = document.getElementById('relationNote');
     const yearSummary = document.getElementById('yearSummary');
-    const prevSearch = document.getElementById('prevSearch');
-    const afterSearch = document.getElementById('afterSearch');
-    const prevResults = document.getElementById('prevResults');
-    const afterResults = document.getElementById('afterResults');
+    const typeBadge = document.getElementById('typeBadge');
+    const typeSwitch = document.getElementById('typeSwitch');
+    const summaryMeta = document.getElementById('summaryMeta');
+    const prevHint = document.getElementById('prevHint');
+    const afterHint = document.getElementById('afterHint');
+    const prevInput = document.getElementById('prevInput');
+    const afterInput = document.getElementById('afterInput');
+    const prevAddBtn = document.getElementById('prevAddBtn');
+    const afterAddBtn = document.getElementById('afterAddBtn');
+    const addPrevBtn = document.getElementById('addPrevBtn');
+    const addAfterBtn = document.getElementById('addAfterBtn');
+    const retainUntil = document.getElementById('retainUntil');
     const prevSelected = document.getElementById('prevSelected');
     const afterSelected = document.getElementById('afterSelected');
-    const prevHelper = document.getElementById('prevHelper');
-    const afterHelper = document.getElementById('afterHelper');
     const previewSentence = document.getElementById('previewSentence');
     const previewMeta = document.getElementById('previewMeta');
-    const previewList = document.getElementById('previewList');
     const errorBox = document.getElementById('errorBox');
     const statusBox = document.getElementById('statusBox');
     const resetRelationBtn = document.getElementById('resetRelationBtn');
     const saveBtn = document.getElementById('saveBtn');
     const recentList = document.getElementById('recentList');
+    const unitOptions = document.getElementById('unitOptions');
 
-    changeYear.addEventListener('input', () => {
+    changeYear.addEventListener('change', () => {
       renderYearSummary();
       renderPreview();
     });
-    changeType.addEventListener('change', () => {
-      syncTypeGuidance();
-      renderPreview();
+    prevAddBtn.addEventListener('click', () => addSelection('prev'));
+    afterAddBtn.addEventListener('click', () => addSelection('after'));
+    addPrevBtn.addEventListener('click', () => prevInput.focus());
+    addAfterBtn.addEventListener('click', () => afterInput.focus());
+    prevInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        addSelection('prev');
+      }
+    });
+    afterInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        addSelection('after');
+      }
     });
     retainUntil.addEventListener('input', renderPreview);
-    relationNote.addEventListener('input', renderPreview);
-    prevSearch.addEventListener('input', () => renderSearchResults('prev'));
-    afterSearch.addEventListener('input', () => renderSearchResults('after'));
     resetRelationBtn.addEventListener('click', resetRelationForm);
     saveBtn.addEventListener('click', submitRelation);
+    typeSwitch.querySelectorAll('[data-type-choice]').forEach(button => {
+      button.addEventListener('click', () => {
+        state.oneToOneType = button.dataset.typeChoice;
+        syncTypeChoiceButtons();
+        renderPreview();
+      });
+    });
     window.addEventListener('load', bootstrap);
 
     async function bootstrap() {
@@ -725,41 +739,48 @@
         const response = await fetch('/api/admin/bootstrap', { cache: 'no-store' });
         const payload = await response.json();
         if (!response.ok || !payload.ok) {
-          throw new Error(payload.error || '부트스트랩 데이터를 불러오지 못했습니다.');
+          throw new Error(payload.error || '초기 데이터를 불러오지 못했습니다.');
         }
 
         state.bootstrap = payload;
         state.units = payload.units || [];
         state.unitsByCode = new Map(state.units.map(unit => [unit.unitCode, unit]));
-        fillChangeTypes();
-        initializeDefaults();
+        state.searchIndex = new Map();
+        state.units.forEach(unit => {
+          const optionLabel = buildUnitOptionLabel(unit);
+          state.searchIndex.set(optionLabel, unit.unitCode);
+        });
+
+        fillYearOptions();
+        fillUnitOptions();
         renderAll();
       } catch (error) {
-        errorBox.textContent = error.message || '부트스트랩 데이터를 불러오지 못했습니다.';
+        errorBox.textContent = error.message || '초기 데이터를 불러오지 못했습니다.';
         errorBox.classList.remove('hidden');
       }
     }
 
-    function fillChangeTypes() {
-      changeType.innerHTML = (state.bootstrap.changeTypes || [])
-        .map(item => `<option value="${escapeHtml(item.code)}">${escapeHtml(item.label)}</option>`)
+    function fillYearOptions() {
+      const years = state.bootstrap?.years || [];
+      const latestYear = years.length ? years[years.length - 1] : new Date().getFullYear();
+      changeYear.innerHTML = years
+        .map(year => `<option value="${escapeHtml(String(year))}">${escapeHtml(String(year))}학년도</option>`)
         .join('');
+      changeYear.value = String(latestYear);
     }
 
-    function initializeDefaults() {
-      const years = state.bootstrap.years || [];
-      const latestYear = years.length ? years[years.length - 1] : new Date().getFullYear();
-      changeYear.value = String(latestYear);
-      changeType.value = 'renewed';
+    function fillUnitOptions() {
+      unitOptions.innerHTML = state.units.map(unit => {
+        const label = buildUnitOptionLabel(unit);
+        return `<option value="${escapeHtml(label)}"></option>`;
+      }).join('');
     }
 
     function renderAll() {
       renderYearSummary();
-      syncTypeGuidance();
-      renderSearchResults('prev');
-      renderSearchResults('after');
       renderSelected('prev');
       renderSelected('after');
+      syncTypeChoiceButtons();
       renderPreview();
       renderRecent();
     }
@@ -767,103 +788,43 @@
     function renderYearSummary() {
       const year = clean(changeYear.value);
       if (!year) {
-        yearSummary.innerHTML = '변경 학년도를 입력하면 해당 연도에 이미 저장된 관계 수를 보여줍니다.';
+        yearSummary.textContent = '변경 학년도를 선택하면 해당 연도의 기존 입력 건수를 함께 보여줍니다.';
         return;
       }
 
-      const count = state.bootstrap?.relationCountsByYear?.[year] || 0;
-      const exists = Number(count) > 0;
-      yearSummary.innerHTML = `
-        <span class="year-chip">${escapeHtml(year)}학년도</span>
-        <span>${exists ? `이미 저장된 관계 ${count}건` : '아직 저장된 관계 없음'}</span>
-      `;
+      const count = Number(state.bootstrap?.relationCountsByYear?.[year] || 0);
+      yearSummary.textContent = count > 0
+        ? `${year}학년도에는 이미 ${count}건의 변경 관계가 저장되어 있습니다.`
+        : `${year}학년도에는 아직 저장된 변경 관계가 없습니다.`;
     }
 
-    function syncTypeGuidance() {
-      const type = changeType.value;
-      const rules = {
-        created: {
-          prev: '변경 전 단위는 비워 둡니다. 변경 후 학과(전공)를 하나 이상 선택합니다.',
-          after: '신설되는 학과(전공)를 선택합니다.'
-        },
-        closed: {
-          prev: '종료되는 학과(전공)를 하나 이상 선택합니다.',
-          after: '변경 후 단위는 비워 둡니다.'
-        },
-        merged: {
-          prev: '통합 전 단위를 여러 개 선택할 수 있습니다.',
-          after: '통합 후 단위는 하나만 선택합니다.'
-        },
-        splitted: {
-          prev: '분리 전 단위는 하나만 선택합니다.',
-          after: '분리 후 단위를 여러 개 선택할 수 있습니다.'
-        },
-        revised: {
-          prev: '명칭이 바뀌기 전 단위를 선택합니다.',
-          after: '명칭이 바뀐 후 단위를 선택합니다.'
-        },
-        renewed: {
-          prev: '개편 전 단위를 선택합니다.',
-          after: '개편 후 단위를 선택합니다.'
-        }
-      }[type] || { prev: '', after: '' };
+    function addSelection(side) {
+      hideFeedback();
 
-      prevHelper.textContent = rules.prev;
-      afterHelper.textContent = rules.after;
-    }
+      const input = side === 'prev' ? prevInput : afterInput;
+      const value = clean(input.value);
+      if (!value) return;
 
-    function renderSearchResults(side) {
-      const query = clean((side === 'prev' ? prevSearch : afterSearch).value).toLowerCase();
-      const container = side === 'prev' ? prevResults : afterResults;
-      const selectedCodes = new Set(side === 'prev' ? state.selectedPrev : state.selectedAfter);
-      const oppositeCodes = new Set(side === 'prev' ? state.selectedAfter : state.selectedPrev);
-      const matches = state.units
-        .filter(unit => {
-          if (selectedCodes.has(unit.unitCode)) return false;
-          const haystack = `${unit.unitCode} ${unit.unitName} ${unit.path} ${unit.unitTypeLabel}`.toLowerCase();
-          return !query || haystack.includes(query);
-        })
-        .slice(0, 10);
-
-      if (!matches.length) {
-        container.innerHTML = `<div class="empty">${query ? '검색 결과가 없습니다.' : '검색어를 입력하거나 아래 결과에서 선택합니다.'}</div>`;
+      const code = resolveUnitCode(value);
+      if (!code) {
+        showError('목록에 있는 학과(전공)를 선택해 주세요.');
         return;
       }
 
-      container.innerHTML = matches.map(unit => {
-        const tempBadge = unit.isTempCode ? '<span class="badge warn">임시코드</span>' : '';
-        const overlapBadge = oppositeCodes.has(unit.unitCode)
-          ? '<span class="badge soft">반대편에 이미 선택됨</span>'
-          : '';
-        return `
-          <div class="search-item">
-            <div class="search-top">
-              <div class="search-name">${escapeHtml(unit.unitName)}</div>
-              <button type="button" data-side="${side}" data-code="${escapeHtml(unit.unitCode)}">추가</button>
-            </div>
-            <div class="meta-row">
-              <span class="badge soft">${escapeHtml(unit.unitTypeLabel)}</span>
-              <span>${escapeHtml(unit.unitCode)}</span>
-              ${tempBadge}
-              ${overlapBadge}
-            </div>
-            <div class="path">${escapeHtml(unit.path)}</div>
-          </div>
-        `;
-      }).join('');
-
-      container.querySelectorAll('button[data-code]').forEach(button => {
-        button.addEventListener('click', () => addSelection(button.dataset.side, button.dataset.code));
-      });
-    }
-
-    function addSelection(side, code) {
-      const list = side === 'prev' ? state.selectedPrev : state.selectedAfter;
-      if (!list.includes(code)) {
-        list.push(code);
+      const sourceList = side === 'prev' ? state.selectedPrev : state.selectedAfter;
+      const otherList = side === 'prev' ? state.selectedAfter : state.selectedPrev;
+      if (sourceList.includes(code)) {
+        showError('이미 추가된 학과(전공)입니다.');
+        return;
       }
+      if (otherList.includes(code)) {
+        showError('같은 학과(전공)를 변경 전과 변경 후에 동시에 넣을 수 없습니다.');
+        return;
+      }
+
+      sourceList.push(code);
+      input.value = '';
       renderSelected(side);
-      renderSearchResults(side);
       renderPreview();
     }
 
@@ -873,49 +834,53 @@
       } else {
         state.selectedAfter = state.selectedAfter.filter(item => item !== code);
       }
+      hideFeedback();
       renderSelected(side);
-      renderSearchResults(side);
       renderPreview();
     }
 
     function renderSelected(side) {
       const container = side === 'prev' ? prevSelected : afterSelected;
-      const selectedCodes = side === 'prev' ? state.selectedPrev : state.selectedAfter;
+      const codes = side === 'prev' ? state.selectedPrev : state.selectedAfter;
 
-      if (!selectedCodes.length) {
-        container.innerHTML = `<div class="empty">${side === 'prev' ? '변경 전 선택 없음' : '변경 후 선택 없음'}</div>`;
+      if (!codes.length) {
+        container.innerHTML = `<div class="empty">${side === 'prev' ? '아직 추가된 변경 전 학과(전공)가 없습니다.' : '아직 추가된 변경 후 학과(전공)가 없습니다.'}</div>`;
         return;
       }
 
-      container.innerHTML = selectedCodes.map(code => {
+      container.innerHTML = codes.map(code => {
         const unit = state.unitsByCode.get(code);
         if (!unit) return '';
         return `
           <div class="selected-item">
             <div class="selected-top">
               <div class="selected-name">${escapeHtml(unit.unitName)}</div>
-              <button type="button" data-side="${side}" data-remove-code="${escapeHtml(code)}">제거</button>
+              <button class="ghost-button" type="button" data-remove-side="${side}" data-remove-code="${escapeHtml(code)}">삭제</button>
             </div>
             <div class="meta-row">
-              <span class="badge soft">${escapeHtml(unit.unitTypeLabel)}</span>
+              <span class="meta-chip">${escapeHtml(unit.unitTypeLabel)}</span>
               <span>${escapeHtml(unit.unitCode)}</span>
-              ${unit.isTempCode ? '<span class="badge warn">임시코드</span>' : ''}
+              ${unit.isTempCode ? '<span class="meta-chip">임시코드</span>' : ''}
             </div>
-            <div class="path">${escapeHtml(unit.path)}</div>
+            <div class="path-copy">${escapeHtml(unit.path)}</div>
           </div>
         `;
       }).join('');
 
-      container.querySelectorAll('button[data-remove-code]').forEach(button => {
-        button.addEventListener('click', () => removeSelection(button.dataset.side, button.dataset.removeCode));
+      container.querySelectorAll('[data-remove-code]').forEach(button => {
+        button.addEventListener('click', () => removeSelection(button.dataset.removeSide, button.dataset.removeCode));
       });
     }
 
     function renderPreview() {
       const preview = buildPreview();
+      applyTypeBadge(preview.typeInfo);
+      syncTypeChoiceButtons(preview.typeInfo.type);
+      syncInputHints(preview.typeInfo.type);
+
       previewSentence.textContent = preview.sentence;
-      previewMeta.innerHTML = preview.meta.map(text => `<div>${escapeHtml(text)}</div>`).join('');
-      previewList.innerHTML = preview.lines.map(line => `<div class="preview-item"><div class="preview-copy">${escapeHtml(line)}</div></div>`).join('');
+      previewMeta.textContent = preview.meta;
+      summaryMeta.textContent = preview.summary;
 
       if (preview.errors.length) {
         errorBox.innerHTML = preview.errors.map(text => `<div>${escapeHtml(text)}</div>`).join('');
@@ -932,94 +897,141 @@
 
     function buildPreview() {
       const year = clean(changeYear.value);
-      const type = changeType.value;
       const prev = state.selectedPrev.map(code => state.unitsByCode.get(code)).filter(Boolean);
       const after = state.selectedAfter.map(code => state.unitsByCode.get(code)).filter(Boolean);
       const errors = [];
-      const rules = {
-        created: { minPrev: 0, minAfter: 1 },
-        closed: { minPrev: 1, minAfter: 0 },
-        revised: { minPrev: 1, minAfter: 1 },
-        renewed: { minPrev: 1, minAfter: 1 },
-        merged: { minPrev: 1, minAfter: 1 },
-        splitted: { minPrev: 1, minAfter: 1 }
-      }[type] || { minPrev: 1, minAfter: 1 };
+      const typeInfo = inferChangeType(prev.length, after.length);
+      const type = typeInfo.type;
+      const typeLabel = CHANGE_TYPE_META[type]?.label || CHANGE_TYPE_META.pending.label;
 
       if (!/^\d+$/.test(year)) {
-        errors.push('변경 학년도를 입력해 주세요.');
-      }
-      if (prev.length < rules.minPrev) {
-        errors.push('변경 전 학과(전공) 선택 수가 변경 유형 조건에 맞지 않습니다.');
-      }
-      if (after.length < rules.minAfter) {
-        errors.push('변경 후 학과(전공) 선택 수가 변경 유형 조건에 맞지 않습니다.');
+        errors.push('변경 학년도를 선택해 주세요.');
       }
 
-      const overlap = prev.find(unit => after.some(other => other.unitCode === unit.unitCode));
-      if (overlap) {
-        errors.push(`같은 편제단위가 변경 전과 변경 후에 동시에 들어갈 수 없습니다: ${overlap.unitName}`);
-      }
-      if (prev.length > 1 && after.length > 1) {
-        errors.push('변경 전 여러 건과 변경 후 여러 건을 한 번에 저장하는 관계는 지원하지 않습니다. 여러 건으로 나눠 입력해 주세요.');
+      if (typeInfo.invalid) {
+        errors.push('변경 전과 변경 후가 모두 여러 개인 관계는 한 번에 저장할 수 없습니다. 관계를 나누어 입력해 주세요.');
       }
 
-      const sentence = sentenceForType(
-        type,
-        prev.map(displayUnit),
-        after.map(displayUnit)
-      );
-      const count = state.bootstrap?.relationCountsByYear?.[year] || 0;
-      const retention = clean(retainUntil.value)
-        ? `${clean(retainUntil.value)}학년도 졸업자까지 유지`
-        : '유지 학년도 없음';
-      const tempWarnings = [...prev, ...after]
-        .filter(unit => unit.isTempCode)
-        .map(unit => `임시코드 포함: ${unit.unitName} (${unit.unitCode})`);
+      if (prev.length === 0 && after.length === 0) {
+        errors.push('변경 전 또는 변경 후 학과(전공)를 먼저 추가해 주세요.');
+      }
+
+      const retentionValue = clean(retainUntil.value);
+      if (retentionValue && !/^\d+$/.test(retentionValue)) {
+        errors.push('유지 학년도는 숫자로 입력해 주세요.');
+      }
+
+      const sentence = buildSentence(type, prev, after);
+      const count = Number(state.bootstrap?.relationCountsByYear?.[year] || 0);
+      const retainCopy = retentionValue ? `${retentionValue}학년도 졸업자까지 유지` : '유지 학년도 없음';
+      const summary = year
+        ? `${year}학년도 · ${typeLabel}${count ? ` · 기존 ${count}건` : ''}`
+        : `${typeLabel}`;
+      const meta = [summary, retainCopy].filter(Boolean).join(' · ');
 
       return {
+        typeInfo,
         sentence,
-        meta: [
-          year ? `변경 학년도: ${year}학년도` : '변경 학년도 미입력',
-          `해당 학년도 기존 관계 수: ${count}건`,
-          `변경 유형: ${changeType.selectedOptions[0]?.textContent || ''}`,
-          `CSV 확장 수: ${relationExpansionCount(prev.length, after.length)}행`,
-          `유지 기준: ${retention}`,
-          ...tempWarnings,
-        ],
-        lines: [
-          ...prev.map(unit => `변경 전 · ${unit.unitName} · ${unit.path}`),
-          ...after.map(unit => `변경 후 · ${unit.unitName} · ${unit.path}`),
-        ],
+        summary,
+        meta,
         errors,
       };
     }
 
-    function sentenceForType(type, prevNames, afterNames) {
-      const prevText = prevNames.join(', ') || '변경 전 단위';
-      const afterText = afterNames.join(', ') || '변경 후 단위';
+    function inferChangeType(prevCount, afterCount) {
+      if (prevCount === 0 && afterCount === 0) {
+        return { type: 'pending', invalid: false, needsChoice: false };
+      }
+      if (prevCount > 1 && afterCount > 1) {
+        return { type: 'invalid', invalid: true, needsChoice: false };
+      }
+      if (prevCount === 0 && afterCount > 0) {
+        return { type: 'created', invalid: false, needsChoice: false };
+      }
+      if (prevCount > 0 && afterCount === 0) {
+        return { type: 'closed', invalid: false, needsChoice: false };
+      }
+      if (prevCount > 1 && afterCount === 1) {
+        return { type: 'merged', invalid: false, needsChoice: false };
+      }
+      if (prevCount === 1 && afterCount > 1) {
+        return { type: 'splitted', invalid: false, needsChoice: false };
+      }
+      if (prevCount === 1 && afterCount === 1) {
+        return { type: state.oneToOneType, invalid: false, needsChoice: true };
+      }
+      return { type: 'pending', invalid: false, needsChoice: false };
+    }
+
+    function buildSentence(type, prev, after) {
+      const prevText = prev.map(displayUnit).join(', ');
+      const afterText = after.map(displayUnit).join(', ');
 
       switch (type) {
         case 'created':
-          return `${afterText} 신설`;
+          return afterText ? `${afterText} 신설` : '신설 관계 대기';
         case 'closed':
-          return `${prevText} 폐지`;
+          return prevText ? `${prevText} 폐지` : '폐지 관계 대기';
         case 'merged':
-          return `${prevText}에서 ${afterText}로 통합`;
+          return prevText && afterText ? `${prevText}에서 ${afterText}로 통합` : '통합 관계 대기';
         case 'splitted':
-          return `${prevText}에서 ${afterText}로 분리`;
+          return prevText && afterText ? `${prevText}에서 ${afterText}로 분리` : '분리 관계 대기';
         case 'revised':
-          return `${prevText}에서 ${afterText}로 명칭변경`;
+          return prevText && afterText ? `${prevText}에서 ${afterText}로 명칭변경` : '명칭변경 관계 대기';
         case 'renewed':
-          return `${prevText}에서 ${afterText}로 개편`;
+          return prevText && afterText ? `${prevText}에서 ${afterText}로 개편` : '개편 관계 대기';
+        case 'invalid':
+          return '현재 선택 조합으로는 저장할 수 없습니다.';
         default:
-          return '저장 미리보기';
+          return '변경 전후 학과(전공)를 선택하면 저장 문장이 여기에 표시됩니다.';
       }
+    }
+
+    function syncInputHints(type) {
+      const prevCount = state.selectedPrev.length;
+      const afterCount = state.selectedAfter.length;
+
+      if (type === 'created') {
+        prevHint.textContent = '신설은 변경 전 없이 저장할 수 있습니다. 필요하면 이전 기준을 추가해 다른 유형으로 전환할 수 있습니다.';
+        afterHint.textContent = '신설되는 학과(전공)를 한 개 이상 추가합니다.';
+      } else if (type === 'closed') {
+        prevHint.textContent = '폐지되는 학과(전공)를 한 개 이상 추가합니다.';
+        afterHint.textContent = '폐지는 변경 후 없이 저장할 수 있습니다. 필요하면 이후 기준을 추가해 다른 유형으로 전환할 수 있습니다.';
+      } else if (type === 'merged') {
+        prevHint.textContent = '통합 전 학과(전공)는 여러 개까지 추가할 수 있습니다.';
+        afterHint.textContent = '통합 후 학과(전공)는 한 개로 맞추는 것이 자연스럽습니다.';
+      } else if (type === 'splitted') {
+        prevHint.textContent = '분리 전 학과(전공)는 한 개로 두는 것이 자연스럽습니다.';
+        afterHint.textContent = '분리 후 학과(전공)는 여러 개까지 추가할 수 있습니다.';
+      } else if (type === 'revised' || type === 'renewed') {
+        prevHint.textContent = '1:1 관계에서는 개편인지 명칭변경인지 상단에서 선택합니다.';
+        afterHint.textContent = '유지 학년도가 있으면 변경 후 기준과 함께 설정합니다.';
+      } else if (prevCount > 1 && afterCount > 1) {
+        prevHint.textContent = '현재 조합은 한 번에 저장할 수 없습니다. 관계를 나누어 입력해 주세요.';
+        afterHint.textContent = '현재 조합은 한 번에 저장할 수 없습니다. 관계를 나누어 입력해 주세요.';
+      } else {
+        prevHint.textContent = '개편되기 전 기준의 학과(전공)를 선택합니다.';
+        afterHint.textContent = '개편 이후 기준의 학과(전공)를 선택합니다.';
+      }
+    }
+
+    function applyTypeBadge(typeInfo) {
+      const meta = CHANGE_TYPE_META[typeInfo.type] || CHANGE_TYPE_META.pending;
+      typeBadge.textContent = meta.label;
+      typeBadge.className = `summary-status ${meta.badgeClass}`;
+      typeSwitch.classList.toggle('hidden', !typeInfo.needsChoice);
+    }
+
+    function syncTypeChoiceButtons(activeType = state.oneToOneType) {
+      typeSwitch.querySelectorAll('[data-type-choice]').forEach(button => {
+        button.classList.toggle('is-active', button.dataset.typeChoice === activeType);
+      });
     }
 
     function renderRecent() {
       const items = state.bootstrap?.recentRelations || [];
       if (!items.length) {
-        recentList.innerHTML = '<div class="empty">최근 입력이 없습니다.</div>';
+        recentList.innerHTML = '<div class="empty">최근 입력 내역이 없습니다.</div>';
         return;
       }
 
@@ -1028,18 +1040,18 @@
         const afterText = item.after.map(displayUnit).join(', ') || '없음';
         const retain = item.retainUntilGradYear
           ? `${item.retainUntilGradYear}학년도 졸업자까지 유지`
-          : '유지 기준 없음';
+          : '유지 학년도 없음';
         return `
           <div class="recent-item">
             <div class="recent-top">
               <div class="recent-title">#${item.relationId} · ${escapeHtml(String(item.changeYear))}학년도</div>
-              <span class="badge soft">${escapeHtml(item.changeTypeLabel)}</span>
+              <span class="meta-chip">${escapeHtml(item.changeTypeLabel)}</span>
             </div>
             <div class="recent-copy">변경 전: ${escapeHtml(prevText)}</div>
             <div class="recent-copy">변경 후: ${escapeHtml(afterText)}</div>
             <div class="meta-row">
-              <span>${escapeHtml(String(item.expansionCount))}행 확장</span>
               <span>${escapeHtml(retain)}</span>
+              <span>${escapeHtml(String(item.expansionCount))}건 확장</span>
             </div>
           </div>
         `;
@@ -1052,14 +1064,14 @@
       if (preview.errors.length) return;
 
       setSubmitting(true);
-      hideStatus();
+      hideFeedback();
 
       try {
         const payload = {
           changeYear: Number(clean(changeYear.value)),
-          changeType: changeType.value,
-          retainUntilGradYear: clean(retainUntil.value) || null,
-          note: clean(relationNote.value) || null,
+          changeType: preview.typeInfo.type,
+          retainUntilGradYear: clean(retainUntil.value) ? Number(clean(retainUntil.value)) : null,
+          note: null,
           prevUnitCodes: [...state.selectedPrev],
           afterUnitCodes: [...state.selectedAfter],
         };
@@ -1074,12 +1086,11 @@
           throw new Error(result.error || '저장에 실패했습니다.');
         }
 
-        showStatus(`관계 #${result.relationId} 저장 완료. ${result.changeYear}학년도에 바로 다음 관계를 계속 입력할 수 있습니다.`);
-        resetRelationForm();
+        showStatus(`관계 #${result.relationId} 저장 완료. ${result.changeYear}학년도에서 계속 입력할 수 있습니다.`);
+        resetRelationForm({ keepStatus: true });
         await refreshBootstrap();
       } catch (error) {
-        errorBox.textContent = error.message || '저장에 실패했습니다.';
-        errorBox.classList.remove('hidden');
+        showError(error.message || '저장에 실패했습니다.');
       } finally {
         setSubmitting(false);
       }
@@ -1089,65 +1100,107 @@
       const response = await fetch('/api/admin/bootstrap', { cache: 'no-store' });
       const payload = await response.json();
       if (!response.ok || !payload.ok) {
-        throw new Error(payload.error || '저장 후 데이터를 새로 불러오지 못했습니다.');
+        throw new Error(payload.error || '새로고침에 실패했습니다.');
       }
-
       state.bootstrap = payload;
       state.units = payload.units || [];
       state.unitsByCode = new Map(state.units.map(unit => [unit.unitCode, unit]));
+      state.searchIndex = new Map();
+      state.units.forEach(unit => {
+        const optionLabel = buildUnitOptionLabel(unit);
+        state.searchIndex.set(optionLabel, unit.unitCode);
+      });
+      fillUnitOptions();
       renderYearSummary();
       renderRecent();
-      renderSearchResults('prev');
-      renderSearchResults('after');
       renderPreview();
     }
 
-    function resetRelationForm() {
+    function resetRelationForm({ keepStatus = false } = {}) {
       state.selectedPrev = [];
       state.selectedAfter = [];
-      prevSearch.value = '';
-      afterSearch.value = '';
+      state.oneToOneType = 'renewed';
+      prevInput.value = '';
+      afterInput.value = '';
       retainUntil.value = '';
-      relationNote.value = '';
-      changeType.value = 'renewed';
-      syncTypeGuidance();
-      renderSearchResults('prev');
-      renderSearchResults('after');
       renderSelected('prev');
       renderSelected('after');
+      syncTypeChoiceButtons();
       renderPreview();
+      if (!keepStatus) hideFeedback();
     }
 
     function setSubmitting(isSubmitting) {
       state.isSubmitting = isSubmitting;
       saveBtn.disabled = isSubmitting;
       resetRelationBtn.disabled = isSubmitting;
+      prevAddBtn.disabled = isSubmitting;
+      afterAddBtn.disabled = isSubmitting;
+      addPrevBtn.disabled = isSubmitting;
+      addAfterBtn.disabled = isSubmitting;
       renderPreview();
+    }
+
+    function resolveUnitCode(value) {
+      const exact = state.searchIndex.get(value);
+      if (exact) return exact;
+
+      const cleaned = value.toLowerCase();
+      const byCode = state.units.find(unit => unit.unitCode.toLowerCase() === cleaned);
+      if (byCode) return byCode.unitCode;
+
+      const exactNameMatches = state.units.filter(unit => unit.unitName === value);
+      if (exactNameMatches.length === 1) return exactNameMatches[0].unitCode;
+
+      return '';
+    }
+
+    function buildUnitOptionLabel(unit) {
+      const collegeName = state.unitsByCode.get(unit.collegeCode)?.unitName || '';
+      const departmentName = state.unitsByCode.get(unit.departmentCode)?.unitName || '';
+      const leafName = unit.unitName || '';
+      let compactPath = '';
+
+      if (unit.unitType === 'major' && departmentName && departmentName !== leafName) {
+        compactPath = [collegeName, `${departmentName}(${leafName})`].filter(Boolean).join(' > ');
+      } else if (unit.unitType === 'major') {
+        compactPath = [collegeName, leafName].filter(Boolean).join(' > ');
+      } else {
+        compactPath = [collegeName, leafName].filter(Boolean).join(' > ');
+      }
+
+      const visiblePath = compactPath || unit.path || leafName;
+      return `${visiblePath} | ${unit.unitCode}`;
+    }
+
+    function displayUnit(unit) {
+      if (!unit) return '';
+      if (unit.unitType === 'major' && unit.departmentCode) {
+        const dept = state.unitsByCode.get(unit.departmentCode);
+        return dept ? `${dept.unitName}(${unit.unitName})` : unit.unitName;
+      }
+      return unit.unitName;
+    }
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.classList.remove('hidden');
+      statusBox.classList.add('hidden');
+      statusBox.textContent = '';
     }
 
     function showStatus(message) {
       statusBox.textContent = message;
       statusBox.classList.remove('hidden');
       errorBox.classList.add('hidden');
-    }
-
-    function hideStatus() {
-      statusBox.classList.add('hidden');
-      statusBox.textContent = '';
-      errorBox.classList.add('hidden');
       errorBox.textContent = '';
     }
 
-    function displayUnit(unit) {
-      if (!unit) return '';
-      return unit.unitType === 'major' && unit.departmentCode
-        ? `${state.unitsByCode.get(unit.departmentCode)?.unitName || ''}(${unit.unitName})`
-        : unit.unitName;
-    }
-
-    function relationExpansionCount(prevCount, afterCount) {
-      if (prevCount > 0 && afterCount > 0) return prevCount * afterCount;
-      return Math.max(prevCount, afterCount);
+    function hideFeedback() {
+      errorBox.classList.add('hidden');
+      errorBox.textContent = '';
+      statusBox.classList.add('hidden');
+      statusBox.textContent = '';
     }
 
     function clean(value) {
@@ -1160,7 +1213,7 @@
         '<': '&lt;',
         '>': '&gt;',
         '"': '&quot;',
-        "'": '&#39;'
+        "'": '&#39;',
       }[char]));
     }
   </script>
