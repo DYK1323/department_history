@@ -9,6 +9,10 @@ const PORT = Number(process.env.PORT) || 3004;
 const ROOT = path.join(__dirname, '..');
 const DB_PATH = process.env.DB_PATH || path.join(ROOT, 'department_history.sqlite');
 const SQLITE_BIN = process.env.SQLITE_BIN || 'sqlite3';
+const CSV_EXPORT_DIR = process.env.CSV_EXPORT_DIR
+  ? path.resolve(process.env.CSV_EXPORT_DIR)
+  : ROOT;
+const DISABLE_CSV_SYNC = process.env.DISABLE_CSV_SYNC === '1';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -20,6 +24,30 @@ const MIME = {
   '.jpg': 'image/jpeg',
   '.ico': 'image/x-icon',
   '.svg': 'image/svg+xml',
+};
+
+const CHANGE_TYPE_RULES = {
+  created: { minPrev: 0, minAfter: 1 },
+  closed: { minPrev: 1, minAfter: 0 },
+  revised: { minPrev: 1, minAfter: 1 },
+  renewed: { minPrev: 1, minAfter: 1 },
+  merged: { minPrev: 1, minAfter: 1 },
+  splitted: { minPrev: 1, minAfter: 1 },
+};
+
+const CHANGE_TYPE_LABELS = {
+  renewed: '개편',
+  revised: '명칭변경',
+  splitted: '분리',
+  merged: '통합',
+  created: '신설',
+  closed: '폐지',
+};
+
+const UNIT_TYPE_LABELS = {
+  college: '단과대학',
+  department: '학과(전공)',
+  major: '학과(전공)',
 };
 
 const SQLITE_CSV_ROUTES = {
@@ -35,54 +63,45 @@ const SQLITE_CSV_ROUTES = {
   `,
   '/org_unit_relation.csv': `
     SELECT
-      relation_id,
-      change_year,
-      COALESCE(prev_college_code, '') AS prev_college_code,
-      COALESCE(prev_dept_code, '') AS prev_dept_code,
-      COALESCE(prev_major_code, '') AS prev_major_code,
-      COALESCE(after_college_code, '') AS after_college_code,
-      COALESCE(after_dept_code, '') AS after_dept_code,
-      COALESCE(after_major_code, '') AS after_major_code,
-      change_type,
-      COALESCE(valid_until, '') AS valid_until,
-      COALESCE(note, '') AS note
-    FROM v_org_unit_relation_legacy
-    ORDER BY relation_id;
+      cr.relation_id AS relation_id,
+      ce.change_year AS change_year,
+      COALESCE(prev.college_code, '') AS prev_college_code,
+      COALESCE(prev.department_code, '') AS prev_dept_code,
+      COALESCE(prev.major_code, '') AS prev_major_code,
+      COALESCE(after.college_code, '') AS after_college_code,
+      COALESCE(after.department_code, '') AS after_dept_code,
+      COALESCE(after.major_code, '') AS after_major_code,
+      cr.change_type AS change_type,
+      COALESCE(CAST(cr.retain_until_grad_year AS TEXT), '') AS valid_until,
+      COALESCE(cr.note, '') AS note
+    FROM change_relation cr
+    JOIN change_event ce ON ce.event_id = cr.event_id
+    LEFT JOIN change_relation_endpoint prev
+      ON prev.relation_id = cr.relation_id AND prev.side = 'prev'
+    LEFT JOIN change_relation_endpoint after
+      ON after.relation_id = cr.relation_id AND after.side = 'after'
+    ORDER BY cr.relation_id, prev.sort_order, after.sort_order;
   `,
-};
-
-const CHANGE_TYPE_RULES = {
-  created: { minPrev: 0, minAfter: 1 },
-  closed: { minPrev: 1, minAfter: 0 },
-  revised: { minPrev: 1, minAfter: 1 },
-  renewed: { minPrev: 1, minAfter: 1 },
-  merged: { minPrev: 1, minAfter: 1 },
-  splitted: { minPrev: 1, minAfter: 1 },
 };
 
 function execSqlite(args, input) {
   return new Promise((resolve, reject) => {
-    execFile(SQLITE_BIN, args, { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 }, (error, stdout, stderr) => {
-      if (error) {
-        reject(new Error(stderr || error.message || 'SQLite command failed'));
-        return;
+    const child = execFile(
+      SQLITE_BIN,
+      args,
+      { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 },
+      (error, stdout, stderr) => {
+        if (error) {
+          reject(new Error(stderr || error.message || 'SQLite command failed'));
+          return;
+        }
+        resolve(stdout);
       }
-      resolve(stdout);
-    }).stdin?.end(input);
-  });
-}
+    );
 
-function execSqliteWithInput(args, input) {
-  return new Promise((resolve, reject) => {
-    const child = execFile(SQLITE_BIN, args, { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 }, (error, stdout, stderr) => {
-      if (error) {
-        reject(new Error(stderr || error.message || 'SQLite command failed'));
-        return;
-      }
-      resolve(stdout);
-    });
-
-    child.stdin.end(input);
+    if (input !== undefined) {
+      child.stdin.end(input);
+    }
   });
 }
 
@@ -96,14 +115,7 @@ async function sqliteQueryJson(query) {
 }
 
 async function sqliteRun(sql) {
-  await execSqliteWithInput([DB_PATH], sql);
-}
-
-async function syncCsvExports() {
-  const dimCsv = await sqliteQueryCsv(SQLITE_CSV_ROUTES['/dim_org_unit.csv']);
-  const relationCsv = await sqliteQueryCsv(SQLITE_CSV_ROUTES['/org_unit_relation.csv']);
-  fs.writeFileSync(path.join(ROOT, 'dim_org_unit.csv'), dimCsv, 'utf8');
-  fs.writeFileSync(path.join(ROOT, 'org_unit_relation.csv'), relationCsv, 'utf8');
+  await execSqlite([DB_PATH], sql);
 }
 
 function sqlValue(value) {
@@ -114,6 +126,40 @@ function sqlValue(value) {
     return Number.isFinite(value) ? String(value) : 'NULL';
   }
   return `'${String(value).replace(/'/g, "''")}'`;
+}
+
+function cleanText(value) {
+  return String(value ?? '').trim();
+}
+
+function nullableText(value) {
+  const text = cleanText(value);
+  return text || null;
+}
+
+function assertInteger(value, label, { allowNull = false } = {}) {
+  if (allowNull && (value === null || value === undefined || value === '')) {
+    return null;
+  }
+  const numeric = Number(value);
+  if (!Number.isInteger(numeric)) {
+    throw new Error(`${label} must be an integer`);
+  }
+  return numeric;
+}
+
+function normalizeCodeList(values, label) {
+  const source = Array.isArray(values) ? values : [];
+  const normalized = source
+    .map(value => cleanText(value))
+    .filter(Boolean);
+  const uniqueCodes = [...new Set(normalized)];
+
+  if (uniqueCodes.length !== normalized.length) {
+    throw new Error(`${label} contains duplicate unit codes`);
+  }
+
+  return uniqueCodes;
 }
 
 function sendJson(res, statusCode, payload) {
@@ -177,65 +223,144 @@ async function serveSqliteCsv(urlPath, res) {
   return true;
 }
 
-function normalizeUnitCodeList(values) {
-  return [...new Set((Array.isArray(values) ? values : [])
-    .map(value => String(value || '').trim())
-    .filter(Boolean))];
+async function syncCsvExports() {
+  if (DISABLE_CSV_SYNC) {
+    return;
+  }
+
+  fs.mkdirSync(CSV_EXPORT_DIR, { recursive: true });
+  const dimCsv = await sqliteQueryCsv(SQLITE_CSV_ROUTES['/dim_org_unit.csv']);
+  const relationCsv = await sqliteQueryCsv(SQLITE_CSV_ROUTES['/org_unit_relation.csv']);
+  fs.writeFileSync(path.join(CSV_EXPORT_DIR, 'dim_org_unit.csv'), dimCsv, 'utf8');
+  fs.writeFileSync(path.join(CSV_EXPORT_DIR, 'org_unit_relation.csv'), relationCsv, 'utf8');
 }
 
-function deriveEndpointPath(unitCode, unitsByCode) {
+async function loadUnits() {
+  const units = await sqliteQueryJson(`
+    SELECT
+      unit_code,
+      unit_name,
+      unit_type,
+      COALESCE(parent_unit_code, '') AS parent_unit_code,
+      CAST(is_temp_code AS INTEGER) AS is_temp_code
+    FROM curriculum_unit
+    ORDER BY rowid;
+  `);
+
+  const unitsByCode = new Map(units.map(unit => [unit.unit_code, unit]));
+  return { units, unitsByCode };
+}
+
+function buildPathCodes(unitCode, unitsByCode) {
+  const pathCodes = [];
+  let current = unitCode;
+  const seen = new Set();
+
+  while (current && !seen.has(current)) {
+    seen.add(current);
+    pathCodes.unshift(current);
+    current = cleanText(unitsByCode.get(current)?.parent_unit_code);
+  }
+
+  return pathCodes;
+}
+
+function buildUnitDto(unitCode, unitsByCode) {
   const unit = unitsByCode.get(unitCode);
   if (!unit) {
     throw new Error(`Unknown unit code: ${unitCode}`);
   }
 
-  let current = unitCode;
-  const seen = new Set();
-  let collegeCode = '';
-  let departmentCode = '';
-  let majorCode = '';
-
-  while (current && !seen.has(current)) {
-    seen.add(current);
-    const currentUnit = unitsByCode.get(current);
-    if (!currentUnit) break;
-
-    if (currentUnit.unit_type === 'college') {
-      collegeCode = current;
-    } else if (currentUnit.unit_type === 'department') {
-      departmentCode = current;
-    } else if (currentUnit.unit_type === 'major') {
-      majorCode = current;
-    }
-
-    current = currentUnit.parent_unit_code || '';
-  }
+  const pathCodes = buildPathCodes(unitCode, unitsByCode);
+  const pathNames = pathCodes
+    .map(code => unitsByCode.get(code)?.unit_name || code)
+    .filter(Boolean);
+  const collegeCode = pathCodes.find(code => unitsByCode.get(code)?.unit_type === 'college') || '';
+  const departmentCode = pathCodes.find(code => unitsByCode.get(code)?.unit_type === 'department') || '';
 
   return {
-    unitCode,
+    unitCode: unit.unit_code,
+    unitName: unit.unit_name,
+    unitType: unit.unit_type,
+    unitTypeLabel: UNIT_TYPE_LABELS[unit.unit_type] || unit.unit_type,
+    parentUnitCode: cleanText(unit.parent_unit_code),
+    pathCodes,
+    path: pathNames.join(' > '),
+    isTempCode: Number(unit.is_temp_code) === 1,
     collegeCode,
     departmentCode,
-    majorCode,
   };
 }
 
-function validatePayload(payload) {
-  const changeYear = Number(payload.changeYear);
-  const retainUntil = payload.retainUntilGradYear === '' || payload.retainUntilGradYear === null || payload.retainUntilGradYear === undefined
-    ? null
-    : Number(payload.retainUntilGradYear);
-  const changeType = String(payload.changeType || '').trim();
-  const prevUnitCodes = normalizeUnitCodeList(payload.prevUnitCodes);
-  const afterUnitCodes = normalizeUnitCodeList(payload.afterUnitCodes);
+function deriveEndpoint(unitCode, unitsByCode) {
+  const dto = buildUnitDto(unitCode, unitsByCode);
+  const majorCode = dto.unitType === 'major'
+    ? dto.unitCode
+    : (dto.pathCodes.find(code => unitsByCode.get(code)?.unit_type === 'major') || '');
 
-  if (!Number.isInteger(changeYear)) {
-    throw new Error('changeYear must be an integer');
+  return {
+    unitCode: dto.unitCode,
+    unitName: dto.unitName,
+    unitType: dto.unitType,
+    unitTypeLabel: dto.unitTypeLabel,
+    collegeCode: dto.collegeCode,
+    departmentCode: dto.departmentCode,
+    majorCode,
+    pathCodes: dto.pathCodes,
+    path: dto.path,
+    isTempCode: dto.isTempCode,
+  };
+}
+
+function fullDisplayName(endpoint) {
+  if (!endpoint) return '';
+  if (endpoint.unitType !== 'major') return endpoint.unitName;
+  const names = endpoint.path.split(' > ');
+  const departmentName = names.find((_, index) => endpoint.pathCodes[index] === endpoint.departmentCode) || '';
+  return departmentName ? `${departmentName}(${endpoint.unitName})` : endpoint.unitName;
+}
+
+function relationExpansionCount(prevCount, afterCount) {
+  if (prevCount > 0 && afterCount > 0) {
+    return prevCount * afterCount;
   }
+  return Math.max(prevCount, afterCount);
+}
+
+function normalizeIncomingPayload(payload) {
+  if (payload && typeof payload === 'object' && payload.event && payload.relation) {
+    return {
+      event: payload.event,
+      relation: payload.relation,
+    };
+  }
+
+  return {
+    event: {
+      changeYear: payload.changeYear,
+    },
+    relation: {
+      changeType: payload.changeType,
+      retainUntilGradYear: payload.retainUntilGradYear,
+      note: payload.note,
+      prevUnitCodes: payload.prevUnitCodes,
+      afterUnitCodes: payload.afterUnitCodes,
+    },
+  };
+}
+
+function validateRelationInput(relation) {
+  const changeType = cleanText(relation.changeType);
+  const prevUnitCodes = normalizeCodeList(relation.prevUnitCodes, 'prevUnitCodes');
+  const afterUnitCodes = normalizeCodeList(relation.afterUnitCodes, 'afterUnitCodes');
+  const retainUntilGradYear = assertInteger(
+    relation.retainUntilGradYear,
+    'retainUntilGradYear',
+    { allowNull: true }
+  );
+
   if (!CHANGE_TYPE_RULES[changeType]) {
     throw new Error('changeType is invalid');
-  }
-  if (retainUntil !== null && !Number.isInteger(retainUntil)) {
-    throw new Error('retainUntilGradYear must be an integer');
   }
 
   const rule = CHANGE_TYPE_RULES[changeType];
@@ -246,13 +371,186 @@ function validatePayload(payload) {
     throw new Error('afterUnitCodes does not satisfy the minimum count for this change type');
   }
 
+  const overlap = prevUnitCodes.find(code => afterUnitCodes.includes(code));
+  if (overlap) {
+    throw new Error(`Unit code cannot appear on both sides of one relation: ${overlap}`);
+  }
+
+  if (prevUnitCodes.length > 1 && afterUnitCodes.length > 1) {
+    throw new Error('N x M relations are not supported in v1. Split this rule into separate entries.');
+  }
+
   return {
-    changeYear,
     changeType,
-    retainUntilGradYear: retainUntil,
-    note: String(payload.note || '').trim(),
+    retainUntilGradYear,
+    note: nullableText(relation.note),
     prevUnitCodes,
     afterUnitCodes,
+  };
+}
+
+async function resolveEventInput(eventInput) {
+  const eventId = assertInteger(eventInput.eventId, 'event.eventId', { allowNull: true });
+  const submittedMeta = {
+    changeYear: assertInteger(eventInput.changeYear, 'event.changeYear', { allowNull: true }),
+    title: nullableText(eventInput.title),
+    sourceText: nullableText(eventInput.sourceText),
+    ruleRevisionDate: nullableText(eventInput.ruleRevisionDate),
+    note: nullableText(eventInput.note),
+  };
+
+  if (eventId !== null) {
+    const existingRows = await sqliteQueryJson(`
+      SELECT
+        event_id,
+        change_year,
+        COALESCE(title, '') AS title,
+        COALESCE(source_text, '') AS source_text,
+        COALESCE(rule_revision_date, '') AS rule_revision_date,
+        COALESCE(note, '') AS note
+      FROM change_event
+      WHERE event_id = ${sqlValue(eventId)}
+      LIMIT 1;
+    `);
+    const existing = existingRows[0];
+    if (!existing) {
+      throw new Error(`Unknown eventId: ${eventId}`);
+    }
+
+    const conflicts = [];
+    if (submittedMeta.changeYear !== null && submittedMeta.changeYear !== Number(existing.change_year)) {
+      conflicts.push('changeYear');
+    }
+    if (submittedMeta.title !== null && submittedMeta.title !== cleanText(existing.title)) {
+      conflicts.push('title');
+    }
+    if (submittedMeta.sourceText !== null && submittedMeta.sourceText !== cleanText(existing.source_text)) {
+      conflicts.push('sourceText');
+    }
+    if (submittedMeta.ruleRevisionDate !== null && submittedMeta.ruleRevisionDate !== cleanText(existing.rule_revision_date)) {
+      conflicts.push('ruleRevisionDate');
+    }
+    if (submittedMeta.note !== null && submittedMeta.note !== cleanText(existing.note)) {
+      conflicts.push('note');
+    }
+
+    if (conflicts.length) {
+      throw new Error(`Existing event metadata conflict: ${conflicts.join(', ')}`);
+    }
+
+    return {
+      mode: 'existing',
+      eventId,
+      changeYear: Number(existing.change_year),
+      title: cleanText(existing.title) || `${existing.change_year}학년도 편제개편`,
+      sourceText: cleanText(existing.source_text) || null,
+      ruleRevisionDate: cleanText(existing.rule_revision_date) || null,
+      note: cleanText(existing.note) || null,
+    };
+  }
+
+  const changeYear = assertInteger(eventInput.changeYear, 'event.changeYear');
+  return {
+    mode: 'new',
+    eventId: null,
+    changeYear,
+    title: nullableText(eventInput.title) || `${changeYear}학년도 편제개편`,
+    sourceText: nullableText(eventInput.sourceText),
+    ruleRevisionDate: nullableText(eventInput.ruleRevisionDate),
+    note: nullableText(eventInput.note),
+  };
+}
+
+async function loadBootstrapData() {
+  if (!fs.existsSync(DB_PATH)) {
+    throw new Error('SQLite database does not exist');
+  }
+
+  const { units, unitsByCode } = await loadUnits();
+  const events = await sqliteQueryJson(`
+    SELECT
+      ce.event_id,
+      ce.change_year,
+      COALESCE(ce.title, '') AS title,
+      COALESCE(ce.rule_revision_date, '') AS rule_revision_date,
+      COALESCE(ce.note, '') AS note,
+      COUNT(cr.relation_id) AS relation_count
+    FROM change_event ce
+    LEFT JOIN change_relation cr ON cr.event_id = ce.event_id
+    GROUP BY ce.event_id
+    ORDER BY ce.change_year DESC, ce.event_id DESC;
+  `);
+
+  const recentRelationRows = await sqliteQueryJson(`
+    SELECT
+      cr.relation_id,
+      ce.event_id,
+      ce.change_year,
+      COALESCE(ce.title, '') AS event_title,
+      cr.change_type,
+      cr.retain_until_grad_year,
+      COALESCE(cr.note, '') AS relation_note,
+      endpoint.side,
+      endpoint.sort_order,
+      endpoint.unit_code
+    FROM change_relation cr
+    JOIN change_event ce ON ce.event_id = cr.event_id
+    LEFT JOIN change_relation_endpoint endpoint ON endpoint.relation_id = cr.relation_id
+    ORDER BY cr.relation_id DESC, endpoint.side, endpoint.sort_order
+    LIMIT 120;
+  `);
+
+  const groupedRecent = new Map();
+  recentRelationRows.forEach(row => {
+    const relationId = Number(row.relation_id);
+    if (!groupedRecent.has(relationId)) {
+      groupedRecent.set(relationId, {
+        relationId,
+        eventId: Number(row.event_id),
+        changeYear: Number(row.change_year),
+        eventTitle: cleanText(row.event_title),
+        changeType: row.change_type,
+        retainUntilGradYear: row.retain_until_grad_year === null ? null : Number(row.retain_until_grad_year),
+        note: cleanText(row.relation_note) || null,
+        prev: [],
+        after: [],
+      });
+    }
+    if (row.side === 'prev' || row.side === 'after') {
+      groupedRecent.get(relationId)[row.side].push(row.unit_code);
+    }
+  });
+
+  return {
+    units: units.map(unit => buildUnitDto(unit.unit_code, unitsByCode)),
+    changeTypes: Object.entries(CHANGE_TYPE_LABELS).map(([code, label]) => ({ code, label })),
+    years: [...new Set(events.map(event => Number(event.change_year)))].sort((a, b) => a - b),
+    events: events.map(event => ({
+      eventId: Number(event.event_id),
+      changeYear: Number(event.change_year),
+      title: cleanText(event.title),
+      ruleRevisionDate: cleanText(event.rule_revision_date) || null,
+      note: cleanText(event.note) || null,
+      relationCount: Number(event.relation_count),
+      displayLabel: `#${event.event_id} · ${event.change_year}학년도 · ${cleanText(event.title) || `${event.change_year}학년도 편제개편`}`,
+    })),
+    recentRelations: [...groupedRecent.values()].slice(0, 12).map(relation => {
+      const prev = relation.prev.map(code => deriveEndpoint(code, unitsByCode));
+      const after = relation.after.map(code => deriveEndpoint(code, unitsByCode));
+      return {
+        relationId: relation.relationId,
+        eventId: relation.eventId,
+        changeYear: relation.changeYear,
+        eventTitle: relation.eventTitle,
+        changeType: relation.changeType,
+        changeTypeLabel: CHANGE_TYPE_LABELS[relation.changeType] || relation.changeType,
+        retainUntilGradYear: relation.retainUntilGradYear,
+        note: relation.note,
+        expansionCount: relationExpansionCount(prev.length, after.length),
+        prev,
+        after,
+      };
+    }),
   };
 }
 
@@ -261,16 +559,18 @@ async function insertRelation(payload) {
     throw new Error('SQLite database does not exist');
   }
 
-  const units = await sqliteQueryJson(`
-    SELECT unit_code, unit_type, parent_unit_code
-    FROM curriculum_unit
-    ORDER BY rowid;
-  `);
-  const unitsByCode = new Map(units.map(unit => [unit.unit_code, unit]));
+  const normalized = normalizeIncomingPayload(payload);
+  const event = await resolveEventInput(normalized.event || {});
+  const relation = validateRelationInput(normalized.relation || {});
+  const { unitsByCode } = await loadUnits();
 
-  const validated = validatePayload(payload);
-  const prevEndpoints = validated.prevUnitCodes.map(code => deriveEndpointPath(code, unitsByCode));
-  const afterEndpoints = validated.afterUnitCodes.map(code => deriveEndpointPath(code, unitsByCode));
+  const prevEndpoints = relation.prevUnitCodes.map(code => deriveEndpoint(code, unitsByCode));
+  const afterEndpoints = relation.afterUnitCodes.map(code => deriveEndpoint(code, unitsByCode));
+
+  if (prevEndpoints.some(endpoint => !unitsByCode.has(endpoint.unitCode)) ||
+      afterEndpoints.some(endpoint => !unitsByCode.has(endpoint.unitCode))) {
+    throw new Error('All unit codes must exist');
+  }
 
   const ids = await sqliteQueryJson(`
     SELECT
@@ -280,27 +580,30 @@ async function insertRelation(payload) {
   `);
   const currentIds = ids[0] || { max_event_id: 0, max_relation_id: 0, max_endpoint_id: 0 };
 
-  const existingEvents = await sqliteQueryJson(`
-    SELECT event_id
-    FROM change_event
-    WHERE change_year = ${sqlValue(validated.changeYear)}
-    ORDER BY event_id
-    LIMIT 1;
-  `);
-
-  const eventId = existingEvents[0]?.event_id || currentIds.max_event_id + 1;
+  const eventId = event.mode === 'existing'
+    ? event.eventId
+    : currentIds.max_event_id + 1;
   const relationId = currentIds.max_relation_id + 1;
   let endpointId = currentIds.max_endpoint_id + 1;
 
-  const statements = ['PRAGMA foreign_keys = ON;', 'BEGIN;'];
+  const statements = ['PRAGMA foreign_keys = ON;', 'BEGIN IMMEDIATE;'];
 
-  if (!existingEvents.length) {
+  if (event.mode === 'new') {
     statements.push(`
-      INSERT INTO change_event (event_id, change_year, title)
-      VALUES (
+      INSERT INTO change_event (
+        event_id,
+        change_year,
+        title,
+        source_text,
+        rule_revision_date,
+        note
+      ) VALUES (
         ${sqlValue(eventId)},
-        ${sqlValue(validated.changeYear)},
-        ${sqlValue(`${validated.changeYear}학년도 편제개편`)}
+        ${sqlValue(event.changeYear)},
+        ${sqlValue(event.title)},
+        ${sqlValue(event.sourceText)},
+        ${sqlValue(event.ruleRevisionDate)},
+        ${sqlValue(event.note)}
       );
     `);
   }
@@ -316,14 +619,14 @@ async function insertRelation(payload) {
     ) VALUES (
       ${sqlValue(relationId)},
       ${sqlValue(eventId)},
-      ${sqlValue(validated.changeType)},
-      ${sqlValue(validated.retainUntilGradYear)},
-      ${sqlValue(validated.note)},
+      ${sqlValue(relation.changeType)},
+      ${sqlValue(relation.retainUntilGradYear)},
+      ${sqlValue(relation.note)},
       NULL
     );
   `);
 
-  for (const endpoint of prevEndpoints) {
+  prevEndpoints.forEach((endpoint, index) => {
     statements.push(`
       INSERT INTO change_relation_endpoint (
         endpoint_id,
@@ -342,13 +645,13 @@ async function insertRelation(payload) {
         ${sqlValue(endpoint.collegeCode)},
         ${sqlValue(endpoint.departmentCode)},
         ${sqlValue(endpoint.majorCode)},
-        ${sqlValue(endpointId - currentIds.max_endpoint_id - 1)}
+        ${sqlValue(index)}
       );
     `);
     endpointId += 1;
-  }
+  });
 
-  for (const endpoint of afterEndpoints) {
+  afterEndpoints.forEach((endpoint, index) => {
     statements.push(`
       INSERT INTO change_relation_endpoint (
         endpoint_id,
@@ -367,11 +670,11 @@ async function insertRelation(payload) {
         ${sqlValue(endpoint.collegeCode)},
         ${sqlValue(endpoint.departmentCode)},
         ${sqlValue(endpoint.majorCode)},
-        ${sqlValue(endpointId - currentIds.max_endpoint_id - 1)}
+        ${sqlValue(index)}
       );
     `);
     endpointId += 1;
-  }
+  });
 
   statements.push('COMMIT;');
   await sqliteRun(statements.join('\n'));
@@ -380,29 +683,58 @@ async function insertRelation(payload) {
   return {
     relationId,
     eventId,
+    event: {
+      eventId,
+      changeYear: event.changeYear,
+      title: event.title,
+      ruleRevisionDate: event.ruleRevisionDate,
+      note: event.note,
+    },
+    relation: {
+      changeType: relation.changeType,
+      changeTypeLabel: CHANGE_TYPE_LABELS[relation.changeType] || relation.changeType,
+      retainUntilGradYear: relation.retainUntilGradYear,
+      note: relation.note,
+      prev: prevEndpoints,
+      after: afterEndpoints,
+      expansionCount: relationExpansionCount(prevEndpoints.length, afterEndpoints.length),
+    },
   };
 }
 
 async function handleApi(req, res, urlPath) {
-  if (urlPath !== '/api/relations') {
-    sendJson(res, 404, { error: 'Not found' });
+  if (urlPath === '/api/admin/bootstrap') {
+    if (req.method !== 'GET') {
+      sendJson(res, 405, { ok: false, error: 'Method not allowed' });
+      return true;
+    }
+
+    try {
+      sendJson(res, 200, { ok: true, ...(await loadBootstrapData()) });
+    } catch (error) {
+      sendJson(res, 500, { ok: false, error: error.message || 'Bootstrap load failed' });
+    }
     return true;
   }
 
-  if (req.method !== 'POST') {
-    sendJson(res, 405, { error: 'Method not allowed' });
+  if (urlPath === '/api/relations') {
+    if (req.method !== 'POST') {
+      sendJson(res, 405, { ok: false, error: 'Method not allowed' });
+      return true;
+    }
+
+    try {
+      const body = await readRequestBody(req);
+      const payload = body ? JSON.parse(body) : {};
+      const result = await insertRelation(payload);
+      sendJson(res, 201, { ok: true, ...result });
+    } catch (error) {
+      sendJson(res, 400, { ok: false, error: error.message || 'Request failed' });
+    }
     return true;
   }
 
-  try {
-    const body = await readRequestBody(req);
-    const payload = body ? JSON.parse(body) : {};
-    const result = await insertRelation(payload);
-    sendJson(res, 201, { ok: true, ...result });
-  } catch (error) {
-    sendJson(res, 400, { ok: false, error: error.message || 'Request failed' });
-  }
-
+  sendJson(res, 404, { ok: false, error: 'Not found' });
   return true;
 }
 
@@ -432,6 +764,11 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  const sourceLabel = fs.existsSync(DB_PATH) ? `SQLite: ${path.basename(DB_PATH)}` : 'static CSV files';
-  console.log(`[편제변경이력] http://localhost:${PORT} (${sourceLabel})`);
+  const sourceLabel = fs.existsSync(DB_PATH)
+    ? `SQLite: ${path.basename(DB_PATH)}`
+    : 'static CSV files';
+  const exportLabel = DISABLE_CSV_SYNC
+    ? 'CSV sync disabled'
+    : `CSV export: ${CSV_EXPORT_DIR}`;
+  console.log(`[department-history] http://localhost:${PORT} (${sourceLabel}, ${exportLabel})`);
 });

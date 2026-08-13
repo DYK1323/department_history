@@ -1,6 +1,6 @@
 {
-  "last_turn_at": "2026-05-13T06:30:00.295Z",
-  "turn_count": 1,
-  "last_progress_at": "2026-05-13T06:30:00.295Z",
-  "last_agent_output": "{\"title\":\"Fix index.html responsive labels\"}"
+  "last_turn_at": "2026-08-13T13:07:17.786Z",
+  "turn_count": 63,
+  "last_progress_at": "2026-08-13T13:07:17.786Z",
+  "last_agent_output": "1차 구현은 끝냈어. 지금 로컬 서버는 `http://localhost:3004`에서 다시 올라와 있고, 조회 화면은 그대로 쓰면서 관리자 입력 화면을 `http://localho"
 }

@@ -151,6 +151,27 @@
       background: var(--ink);
     }
 
+    .admin-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid var(--hairline);
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    #openEditorBtn,
+    #editorModal,
+    #unitOptionList {
+      display: none !important;
+    }
+
     @media (max-width: 1120px) {
       .app-titlebar {
         grid-template-columns: 1fr;
@@ -606,168 +627,6 @@
       color: var(--muted);
     }
 
-    .editor-modal {
-      position: fixed;
-      inset: 0;
-      z-index: 60;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      background: rgba(246, 245, 244, 0.82);
-      backdrop-filter: blur(8px);
-    }
-
-    .editor-modal.is-open {
-      display: flex;
-    }
-
-    .editor-panel {
-      width: min(760px, calc(100vw - 32px));
-      max-height: calc(100vh - 40px);
-      overflow: auto;
-      border: 1px solid var(--hairline);
-      background: var(--panel);
-    }
-
-    .editor-head {
-      display: flex;
-      align-items: start;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 18px 18px 14px;
-      border-bottom: 1px solid var(--hairline);
-    }
-
-    .editor-title {
-      margin: 0;
-      font-size: 17px;
-      font-weight: 600;
-    }
-
-    .editor-subtitle {
-      margin-top: 5px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
-    .editor-body {
-      display: grid;
-      gap: 18px;
-      padding: 18px;
-    }
-
-    .editor-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .editor-grid label,
-    .editor-stack label {
-      display: grid;
-      gap: 6px;
-      align-items: start;
-      color: var(--muted);
-      font-size: 12px;
-      white-space: normal;
-    }
-
-    .editor-grid input,
-    .editor-grid select,
-    .editor-stack textarea,
-    .endpoint-input {
-      width: 100%;
-    }
-
-    .editor-stack {
-      display: grid;
-      gap: 8px;
-    }
-
-    .editor-section {
-      display: grid;
-      gap: 10px;
-      padding: 14px;
-      border: 1px solid var(--hairline);
-      background: #fcfbfa;
-    }
-
-    .editor-section-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .editor-section-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-    }
-
-    .editor-helper,
-    .editor-status {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .editor-status[data-tone="error"] {
-      color: var(--closed);
-    }
-
-    .editor-status[data-tone="success"] {
-      color: var(--created);
-    }
-
-    .endpoint-list {
-      display: grid;
-      gap: 8px;
-    }
-
-    .endpoint-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .endpoint-remove,
-    .editor-secondary {
-      min-width: 44px;
-      padding: 0 10px;
-      border-color: var(--hairline);
-      background: var(--panel);
-      color: var(--ink);
-    }
-
-    .editor-actions {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .editor-actions-right {
-      display: flex;
-      gap: 10px;
-    }
-
-    @media (max-width: 720px) {
-      .editor-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .editor-actions {
-        flex-direction: column-reverse;
-      }
-
-      .editor-actions-right {
-        justify-content: flex-end;
-      }
-    }
-
   </style>
 </head>
 <body>
@@ -953,6 +812,7 @@
     const empty = document.getElementById("empty");
     const tooltip = document.getElementById("tooltip");
     const detailPanel = document.getElementById("detailPanel");
+    const legend = document.querySelector(".legend");
     const editorModal = document.getElementById("editorModal");
     const editorForm = document.getElementById("editorForm");
     const editorYear = document.getElementById("editorYear");
@@ -999,6 +859,17 @@
     window.addEventListener("resize", () => {
       if (state.relations.length) render();
     });
+
+    ensureAdminLink();
+
+    function ensureAdminLink() {
+      if (!legend || legend.querySelector('.admin-link')) return;
+      const link = document.createElement("a");
+      link.className = "admin-link";
+      link.href = "/admin.html";
+      link.textContent = "관리자";
+      legend.appendChild(link);
+    }
 
     function syncYearHeader() {
       yearTrack.style.transform = `translateX(${-canvasWrap.scrollLeft}px)`;
