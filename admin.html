@@ -532,6 +532,30 @@
       line-height: 1.45;
     }
 
+    .mode-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--hairline);
+      background: #fffaf1;
+      color: var(--ink);
+    }
+
+    .mode-banner-title {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+
+    .mode-banner-copy {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
     .feedback {
       display: grid;
       gap: 10px;
@@ -667,6 +691,14 @@
             <div class="summary-meta" id="summaryMeta">변경 전 또는 변경 후 학과(전공)를 추가하면 변경구분이 자동으로 결정됩니다.</div>
           </div>
 
+          <div class="mode-banner hidden" id="modeBanner">
+            <div>
+              <div class="mode-banner-title" id="modeBannerTitle">수정 모드</div>
+              <div class="mode-banner-copy" id="modeBannerCopy">관계를 불러와 수정 중입니다.</div>
+            </div>
+            <button class="ghost-button" id="cancelEditBtn" type="button">수정 취소</button>
+          </div>
+
           <div class="editor-grid">
             <div class="editor-column">
               <div class="column-card">
@@ -765,6 +797,8 @@
       units: [],
       selectableUnits: [],
       unitsByCode: new Map(),
+      mode: 'create',
+      editingRelationId: null,
       selectedPrev: [],
       selectedAfter: [],
       oneToOneType: 'renewed',
@@ -796,12 +830,20 @@
     const resetRelationBtn = document.getElementById('resetRelationBtn');
     const saveBtn = document.getElementById('saveBtn');
     const recentList = document.getElementById('recentList');
+    const modeBanner = document.getElementById('modeBanner');
+    const modeBannerTitle = document.getElementById('modeBannerTitle');
+    const modeBannerCopy = document.getElementById('modeBannerCopy');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
 
     changeYear.addEventListener('change', () => {
-      syncSelectionsForChangeYear();
+      if (state.mode === 'create') {
+        syncSelectionsForChangeYear();
+      }
       prevInput.value = '';
       afterInput.value = '';
-      applyDefaultRetainUntil();
+      if (state.mode === 'create') {
+        applyDefaultRetainUntil();
+      }
       renderYearSummary();
       renderSelected('prev');
       renderSelected('after');
@@ -847,6 +889,7 @@
     });
     retainUntil.addEventListener('input', renderPreview);
     resetRelationBtn.addEventListener('click', resetRelationForm);
+    cancelEditBtn.addEventListener('click', cancelEditMode);
     saveBtn.addEventListener('click', submitRelation);
     typeSwitch.querySelectorAll('[data-type-choice]').forEach(button => {
       button.addEventListener('click', () => {
@@ -910,6 +953,7 @@
     }
 
     function renderAll() {
+      renderModeState();
       renderYearSummary();
       renderSelected('prev');
       renderSelected('after');
@@ -928,9 +972,25 @@
       }
 
       const count = Number(state.bootstrap?.relationCountsByYear?.[year] || 0);
-      yearSummary.textContent = count > 0
+      const baseCopy = count > 0
         ? `${year}학년도에는 이미 ${count}건의 변경 관계가 저장되어 있습니다.`
         : `${year}학년도에는 아직 저장된 변경 관계가 없습니다.`;
+      yearSummary.textContent = state.mode === 'edit' && state.editingRelationId
+        ? `${baseCopy} · 현재 관계 #${state.editingRelationId} 수정 중입니다.`
+        : baseCopy;
+    }
+
+    function renderModeState() {
+      const isEditMode = state.mode === 'edit';
+      modeBanner.classList.toggle('hidden', !isEditMode);
+      modeBannerTitle.textContent = isEditMode && state.editingRelationId
+        ? `관계 #${state.editingRelationId} 수정 중`
+        : '수정 모드';
+      modeBannerCopy.textContent = isEditMode
+        ? '저장은 다음 단계에서 PATCH로 연결합니다. 지금은 수정 대상 주입과 화면 상태를 먼저 안정화합니다.'
+        : '';
+      saveBtn.textContent = isEditMode ? '수정 저장' : '저장';
+      resetRelationBtn.textContent = isEditMode ? '수정 취소' : '현재 입력 초기화';
     }
 
     function addSelection(side) {
@@ -1027,7 +1087,7 @@
       }
 
       if (!state.isSubmitting) {
-        saveBtn.disabled = preview.errors.length > 0;
+        saveBtn.disabled = preview.errors.length > 0 || state.mode === 'edit';
       }
     }
 
@@ -1198,10 +1258,15 @@
             </div>
             <div class="meta-row">
               <span>${escapeHtml(retain)}</span>
+              <button class="ghost-button" type="button" data-edit-relation-id="${escapeHtml(String(item.relationId))}">수정</button>
             </div>
           </div>
         `;
       }).join('');
+
+      recentList.querySelectorAll('[data-edit-relation-id]').forEach(button => {
+        button.addEventListener('click', () => enterEditMode(Number(button.dataset.editRelationId)));
+      });
     }
 
     function buildRecentRelationSummary(changeType, prevText, afterText) {
@@ -1215,6 +1280,11 @@
     }
 
     async function submitRelation() {
+      if (state.mode === 'edit') {
+        showError('수정 저장은 다음 단계에서 연결됩니다. 지금은 수정 모드 진입과 상태 전환만 반영된 상태입니다.');
+        return;
+      }
+
       const preview = buildPreview();
       renderPreview();
       if (preview.errors.length) return;
@@ -1268,6 +1338,8 @@
     }
 
     function resetRelationForm({ keepStatus = false } = {}) {
+      state.mode = 'create';
+      state.editingRelationId = null;
       state.selectedPrev = [];
       state.selectedAfter = [];
       state.oneToOneType = 'renewed';
@@ -1276,11 +1348,46 @@
       applyDefaultRetainUntil();
       hideSearchMenu('prev');
       hideSearchMenu('after');
+      renderModeState();
+      renderYearSummary();
       renderSelected('prev');
       renderSelected('after');
       syncTypeChoiceButtons();
       renderPreview();
       if (!keepStatus) hideFeedback();
+    }
+
+    function cancelEditMode() {
+      resetRelationForm();
+      showStatus('수정 모드를 종료하고 새 입력 상태로 돌아왔습니다.');
+    }
+
+    function enterEditMode(relationId) {
+      const relation = (state.bootstrap?.recentRelations || []).find(item => Number(item.relationId) === Number(relationId));
+      if (!relation) {
+        showError('최근 입력 목록에서 수정 대상을 찾지 못했습니다.');
+        return;
+      }
+
+      state.mode = 'edit';
+      state.editingRelationId = Number(relation.relationId);
+      state.selectedPrev = relation.prev.map(item => item.unitCode).filter(Boolean);
+      state.selectedAfter = relation.after.map(item => item.unitCode).filter(Boolean);
+      state.oneToOneType = relation.changeType === 'revised' ? 'revised' : 'renewed';
+      changeYear.value = String(relation.changeYear);
+      retainUntil.value = relation.retainUntilGradYear === null ? '' : String(relation.retainUntilGradYear);
+      prevInput.value = '';
+      afterInput.value = '';
+      hideFeedback();
+      hideSearchMenu('prev');
+      hideSearchMenu('after');
+      renderModeState();
+      renderYearSummary();
+      renderSelected('prev');
+      renderSelected('after');
+      syncTypeChoiceButtons();
+      renderPreview();
+      showStatus(`관계 #${relation.relationId} 수정 모드로 불러왔습니다. 다음 단계에서 수정 저장이 연결됩니다.`);
     }
 
     function setSubmitting(isSubmitting) {
