@@ -43,6 +43,10 @@
       min-height: 100vh;
     }
 
+    body.modal-open {
+      overflow: hidden;
+    }
+
     button,
     input,
     select {
@@ -654,6 +658,33 @@
       line-height: 1.45;
     }
 
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0, 0, 0, 0.24);
+    }
+
+    #relationEditorSection.is-edit-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      z-index: 70;
+      width: min(calc(100vw - 32px), 1160px);
+      max-height: calc(100vh - 40px);
+      overflow: auto;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+      background: rgba(255, 255, 255, 0.98);
+    }
+
+    #relationEditorSection.is-edit-modal .surface-head {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: rgba(255, 255, 255, 0.98);
+    }
+
     .feedback {
       display: grid;
       gap: 10px;
@@ -772,10 +803,10 @@
 
   <main class="page-shell">
     <div class="stack">
-      <section class="surface">
+      <section class="surface" id="relationEditorSection">
         <div class="surface-head">
           <div>
-            <h2 class="surface-title">변경 관계 입력</h2>
+            <h2 class="surface-title" id="relationEditorTitle">변경 관계 입력</h2>
             <div class="surface-copy" id="yearSummary"></div>
           </div>
         </div>
@@ -961,6 +992,7 @@
       </section>
     </div>
   </main>
+  <div class="modal-backdrop hidden" id="editModalBackdrop"></div>
   <script>
     const CHANGE_TYPE_META = {
       created: { label: '신설', badgeClass: 'is-created' },
@@ -1035,6 +1067,9 @@
     const resetRelationBtn = document.getElementById('resetRelationBtn');
     const saveBtn = document.getElementById('saveBtn');
     const recentList = document.getElementById('recentList');
+    const relationEditorSection = document.getElementById('relationEditorSection');
+    const relationEditorTitle = document.getElementById('relationEditorTitle');
+    const editModalBackdrop = document.getElementById('editModalBackdrop');
     const modeBanner = document.getElementById('modeBanner');
     const modeBannerTitle = document.getElementById('modeBannerTitle');
     const modeBannerCopy = document.getElementById('modeBannerCopy');
@@ -1145,6 +1180,7 @@
     retainUntil.addEventListener('input', renderPreview);
     resetRelationBtn.addEventListener('click', resetRelationForm);
     cancelEditBtn.addEventListener('click', cancelEditMode);
+    editModalBackdrop.addEventListener('click', cancelEditMode);
     saveBtn.addEventListener('click', submitRelation);
     typeSwitch.querySelectorAll('[data-type-choice]').forEach(button => {
       button.addEventListener('click', () => {
@@ -1238,7 +1274,11 @@
 
     function renderModeState() {
       const isEditMode = state.mode === 'edit';
+      document.body.classList.toggle('modal-open', isEditMode);
+      relationEditorSection.classList.toggle('is-edit-modal', isEditMode);
+      editModalBackdrop.classList.toggle('hidden', !isEditMode);
       modeBanner.classList.toggle('hidden', !isEditMode);
+      relationEditorTitle.textContent = isEditMode ? '변경 관계 수정' : '변경 관계 입력';
       modeBannerTitle.textContent = isEditMode && state.editingRelationId
         ? `관계 #${state.editingRelationId} 수정 중`
         : '수정 모드';
@@ -1569,15 +1609,16 @@
             </div>
             <div class="meta-row">
               <span>${escapeHtml(retain)}</span>
-              <button class="ghost-button" type="button" data-edit-relation-id="${escapeHtml(String(item.relationId))}">수정</button>
+              <button
+                class="ghost-button"
+                type="button"
+                data-edit-relation-id="${escapeHtml(String(item.relationId))}"
+                onclick="enterEditMode(${Number(item.relationId)}); return false;"
+              >수정</button>
             </div>
           </div>
         `;
       }).join('');
-
-      recentList.querySelectorAll('[data-edit-relation-id]').forEach(button => {
-        button.addEventListener('click', () => enterEditMode(Number(button.dataset.editRelationId)));
-      });
     }
 
     function buildRecentRelationSummary(changeType, prevText, afterText) {
@@ -1721,6 +1762,8 @@
         setSubmitting(false);
       }
     }
+
+    window.enterEditMode = enterEditMode;
 
     function setSubmitting(isSubmitting) {
       state.isSubmitting = isSubmitting;
