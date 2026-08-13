@@ -400,6 +400,16 @@
       gap: 8px;
     }
 
+    .inline-search-row input {
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid var(--hairline);
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 13px;
+      font-family: inherit;
+    }
+
     .search-row,
     .retain-row {
       display: grid;
@@ -1765,6 +1775,12 @@
       };
     }
 
+    function describeExistingUnitByCode(code) {
+      const unit = state.unitsByCode.get(code);
+      if (!unit) return code;
+      return `${buildUnitOptionPath(unit)} (${unit.unitCode})`;
+    }
+
     function removeDraftAfterUnit(code) {
       state.draftAfterNewUnits = state.draftAfterNewUnits.filter(unit => unit.unitCode !== code);
       hideFeedback();
@@ -1828,7 +1844,7 @@
           return;
         }
       } else if (state.unitsByCode.has(collegeCode)) {
-        showError('이미 등록된 단과대학코드입니다. 기존 선택으로 골라 주세요.');
+        showError(`이미 등록된 단과대학코드입니다: ${describeExistingUnitByCode(collegeCode)}. 기존 선택으로 골라 주세요.`);
         return;
       }
 
@@ -1843,7 +1859,7 @@
           return;
         }
       } else if (departmentMode === 'new' && state.unitsByCode.has(departmentCode)) {
-        showError('이미 등록된 학부코드입니다. 기존 선택으로 골라 주세요.');
+        showError(`이미 등록된 학부코드입니다: ${describeExistingUnitByCode(departmentCode)}. 기존 선택으로 골라 주세요.`);
         return;
       }
 
@@ -1856,7 +1872,7 @@
       }
 
       if (state.unitsByCode.has(unitCode)) {
-        showError('이미 등록된 학과(전공) 코드입니다.');
+        showError(`이미 등록된 학과(전공) 코드입니다: ${describeExistingUnitByCode(unitCode)}.`);
         return;
       }
       if (state.selectedPrev.includes(unitCode) || state.selectedAfter.includes(unitCode)) {

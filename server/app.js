@@ -357,6 +357,13 @@ function deriveEndpoint(unitCode, unitsByCode) {
   };
 }
 
+function describeUnitForError(unitCode, unitsByCode) {
+  const unit = unitsByCode.get(unitCode);
+  if (!unit) return unitCode;
+  const dto = buildUnitDto(unitCode, unitsByCode);
+  return `${dto.path} (${dto.unitCode})`;
+}
+
 function relationExpansionCount(prevCount, afterCount) {
   if (prevCount > 0 && afterCount > 0) return prevCount * afterCount;
   return Math.max(prevCount, afterCount);
@@ -393,7 +400,10 @@ function validateAfterNewUnits(drafts, unitsByCode, usedCodes) {
       throw new Error(`afterNewUnits[${index}].unitCode is required`);
     }
     if (usedCodes.has(draft.unitCode) || unitsByCode.has(draft.unitCode)) {
-      throw new Error(`afterNewUnits[${index}].unitCode already exists: ${draft.unitCode}`);
+      const detail = unitsByCode.has(draft.unitCode)
+        ? describeUnitForError(draft.unitCode, unitsByCode)
+        : draft.unitCode;
+      throw new Error(`afterNewUnits[${index}].unitCode already exists: ${detail}`);
     }
 
     const college = unitsByCode.get(draft.collegeCode);
@@ -451,6 +461,16 @@ function validateAfterNewUnits(drafts, unitsByCode, usedCodes) {
         });
       }
       parentUnitCode = departmentCode;
+    }
+
+    if (college && draft.collegeName) {
+      const detail = describeUnitForError(draft.collegeCode, unitsByCode);
+      throw new Error(`afterNewUnits[${index}].collegeCode already exists: ${detail}`);
+    }
+
+    if (departmentCode && unitsByCode.has(departmentCode) && draft.departmentName) {
+      const detail = describeUnitForError(departmentCode, unitsByCode);
+      throw new Error(`afterNewUnits[${index}].departmentCode already exists: ${detail}`);
     }
 
     usedCodes.add(draft.unitCode);
