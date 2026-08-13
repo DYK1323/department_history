@@ -312,6 +312,57 @@
       position: relative;
     }
 
+    .inline-mode-switch {
+      display: inline-flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .inline-mode-switch .tag-toggle {
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 99px;
+    }
+
+    .inline-form {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--hairline);
+      background: #fcfcfc;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 12px;
+    }
+
+    .field-grid label,
+    .inline-form label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .field-grid input,
+    .field-grid select,
+    .inline-form input,
+    .inline-form select {
+      min-height: 36px;
+      padding: 0 10px;
+      border: 1px solid var(--hairline);
+      background: var(--panel);
+      color: var(--ink);
+      font: inherit;
+    }
+
+    .field-grid .full-span {
+      grid-column: 1 / -1;
+    }
+
     .search-row,
     .retain-row {
       display: grid;
@@ -642,7 +693,8 @@
       }
 
       .search-row,
-      .retain-row {
+      .retain-row,
+      .field-grid {
         grid-template-columns: 1fr;
       }
 
@@ -735,12 +787,50 @@
                 </div>
                 <div class="column-hint" id="afterHint">변경 후 기준의 학과(전공)를 선택합니다.</div>
                 <div class="search-block">
-                  <div class="search-box">
-                    <div class="search-row">
-                      <input id="afterInput" type="text" autocomplete="off" placeholder="학과명, 전공명, 코드 검색">
-                      <button class="icon-button" id="afterAddBtn" type="button">넣기</button>
+                  <div class="inline-mode-switch" id="afterModeSwitch">
+                    <button class="tag-toggle is-active" type="button" data-after-mode="existing">기존 선택</button>
+                    <button class="tag-toggle" type="button" data-after-mode="new">신규 입력</button>
+                  </div>
+
+                  <div id="afterExistingBlock">
+                    <div class="search-box">
+                      <div class="search-row">
+                        <input id="afterInput" type="text" autocomplete="off" placeholder="학과명, 전공명, 코드 검색">
+                        <button class="icon-button" id="afterAddBtn" type="button">넣기</button>
+                      </div>
+                      <div class="search-menu hidden" id="afterMenu"></div>
                     </div>
-                    <div class="search-menu hidden" id="afterMenu"></div>
+                  </div>
+
+                  <div class="inline-form hidden" id="afterNewBlock">
+                    <div class="field-grid">
+                      <label class="full-span" for="newAfterName">
+                        학과(전공)명
+                        <input id="newAfterName" type="text" placeholder="예: 글로벌창업융합전공">
+                      </label>
+                      <label for="newAfterType">
+                        단위 유형
+                        <select id="newAfterType">
+                          <option value="department">학과</option>
+                          <option value="major">전공</option>
+                        </select>
+                      </label>
+                      <label for="newAfterCollegeCode">
+                        단과대학코드
+                        <input id="newAfterCollegeCode" type="text" placeholder="예: H500020">
+                      </label>
+                      <label for="newAfterDepartmentCode">
+                        학부코드(있으면)
+                        <input id="newAfterDepartmentCode" type="text" placeholder="없으면 비움">
+                      </label>
+                      <label for="newAfterUnitCode">
+                        학과/전공코드
+                        <input id="newAfterUnitCode" type="text" placeholder="예: HNEW100">
+                      </label>
+                    </div>
+                    <div class="action-buttons">
+                      <button class="ghost-button" id="addAfterNewBtn" type="button">신규 항목 추가</button>
+                    </div>
                   </div>
                 </div>
                 <div class="selected-list" id="afterSelected"></div>
@@ -799,8 +889,10 @@
       unitsByCode: new Map(),
       mode: 'create',
       editingRelationId: null,
+      afterInputMode: 'existing',
       selectedPrev: [],
       selectedAfter: [],
+      draftAfterNewUnits: [],
       oneToOneType: 'renewed',
       isSubmitting: false,
     };
@@ -820,6 +912,15 @@
     const addAfterBtn = document.getElementById('addAfterBtn');
     const prevMenu = document.getElementById('prevMenu');
     const afterMenu = document.getElementById('afterMenu');
+    const afterModeSwitch = document.getElementById('afterModeSwitch');
+    const afterExistingBlock = document.getElementById('afterExistingBlock');
+    const afterNewBlock = document.getElementById('afterNewBlock');
+    const newAfterName = document.getElementById('newAfterName');
+    const newAfterType = document.getElementById('newAfterType');
+    const newAfterCollegeCode = document.getElementById('newAfterCollegeCode');
+    const newAfterDepartmentCode = document.getElementById('newAfterDepartmentCode');
+    const newAfterUnitCode = document.getElementById('newAfterUnitCode');
+    const addAfterNewBtn = document.getElementById('addAfterNewBtn');
     const retainUntil = document.getElementById('retainUntil');
     const prevSelected = document.getElementById('prevSelected');
     const afterSelected = document.getElementById('afterSelected');
@@ -853,8 +954,15 @@
     });
     prevAddBtn.addEventListener('click', () => addSelection('prev'));
     afterAddBtn.addEventListener('click', () => addSelection('after'));
+    addAfterNewBtn.addEventListener('click', addNewAfterUnitDraft);
     addPrevBtn.addEventListener('click', () => prevInput.focus());
     addAfterBtn.addEventListener('click', () => afterInput.focus());
+    afterModeSwitch.querySelectorAll('[data-after-mode]').forEach(button => {
+      button.addEventListener('click', () => {
+        state.afterInputMode = button.dataset.afterMode;
+        renderAfterInputMode();
+      });
+    });
     prevInput.addEventListener('keydown', event => {
       if (event.key === 'ArrowDown') {
         event.preventDefault();
@@ -954,6 +1062,7 @@
 
     function renderAll() {
       renderModeState();
+      renderAfterInputMode();
       renderYearSummary();
       renderSelected('prev');
       renderSelected('after');
@@ -991,6 +1100,15 @@
         : '';
       saveBtn.textContent = isEditMode ? '수정 저장' : '저장';
       resetRelationBtn.textContent = isEditMode ? '수정 취소' : '현재 입력 초기화';
+    }
+
+    function renderAfterInputMode() {
+      const isNewMode = state.afterInputMode === 'new';
+      afterExistingBlock.classList.toggle('hidden', isNewMode);
+      afterNewBlock.classList.toggle('hidden', !isNewMode);
+      afterModeSwitch.querySelectorAll('[data-after-mode]').forEach(button => {
+        button.classList.toggle('is-active', button.dataset.afterMode === state.afterInputMode);
+      });
     }
 
     function addSelection(side) {
@@ -1038,13 +1156,14 @@
     function renderSelected(side) {
       const container = side === 'prev' ? prevSelected : afterSelected;
       const codes = side === 'prev' ? state.selectedPrev : state.selectedAfter;
+      const draftUnits = side === 'after' ? state.draftAfterNewUnits : [];
 
-      if (!codes.length) {
+      if (!codes.length && !draftUnits.length) {
         container.innerHTML = `<div class="empty">${side === 'prev' ? '아직 추가된 변경 전 학과(전공)가 없습니다.' : '아직 추가된 변경 후 학과(전공)가 없습니다.'}</div>`;
         return;
       }
 
-      container.innerHTML = codes.map(code => {
+      const existingMarkup = codes.map(code => {
         const unit = state.unitsByCode.get(code);
         if (!unit) return '';
         return `
@@ -1063,8 +1182,30 @@
         `;
       }).join('');
 
+      const draftMarkup = draftUnits.map(draft => {
+        const unit = buildDraftUnitDto(draft);
+        return `
+          <div class="selected-item">
+            <div class="selected-top">
+              <div class="selected-name">${escapeHtml(unit.unitName)}</div>
+              <button class="ghost-button" type="button" data-remove-draft-code="${escapeHtml(draft.unitCode)}">삭제</button>
+            </div>
+            <div class="meta-row">
+              <span class="meta-chip">신규</span>
+              <span>${escapeHtml(unit.unitCode)}</span>
+            </div>
+            <div class="path-copy">${escapeHtml(unit.path)}</div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `${existingMarkup}${draftMarkup}`;
+
       container.querySelectorAll('[data-remove-code]').forEach(button => {
         button.addEventListener('click', () => removeSelection(button.dataset.removeSide, button.dataset.removeCode));
+      });
+      container.querySelectorAll('[data-remove-draft-code]').forEach(button => {
+        button.addEventListener('click', () => removeDraftAfterUnit(button.dataset.removeDraftCode));
       });
     }
 
@@ -1094,7 +1235,10 @@
     function buildPreview() {
       const year = clean(changeYear.value);
       const prev = state.selectedPrev.map(code => state.unitsByCode.get(code)).filter(Boolean);
-      const after = state.selectedAfter.map(code => state.unitsByCode.get(code)).filter(Boolean);
+      const after = [
+        ...state.selectedAfter.map(code => state.unitsByCode.get(code)).filter(Boolean),
+        ...state.draftAfterNewUnits.map(buildDraftUnitDto),
+      ];
       const errors = [];
       const typeInfo = inferChangeType(prev.length, after.length);
       const type = typeInfo.type;
@@ -1295,6 +1439,7 @@
           note: null,
           prevUnitCodes: [...state.selectedPrev],
           afterUnitCodes: [...state.selectedAfter],
+          afterNewUnits: state.draftAfterNewUnits.map(unit => ({ ...unit })),
         };
 
         const isEditMode = state.mode === 'edit' && state.editingRelationId;
@@ -1330,6 +1475,7 @@
       state.units = payload.units || [];
       state.unitsByCode = new Map(state.units.map(unit => [unit.unitCode, unit]));
       state.selectableUnits = buildSelectableUnits();
+      renderAfterInputMode();
       renderYearSummary();
       renderRecent();
       renderPreview();
@@ -1338,15 +1484,19 @@
     function resetRelationForm({ keepStatus = false } = {}) {
       state.mode = 'create';
       state.editingRelationId = null;
+      state.afterInputMode = 'existing';
       state.selectedPrev = [];
       state.selectedAfter = [];
+      state.draftAfterNewUnits = [];
       state.oneToOneType = 'renewed';
       prevInput.value = '';
       afterInput.value = '';
+      resetNewAfterForm();
       applyDefaultRetainUntil();
       hideSearchMenu('prev');
       hideSearchMenu('after');
       renderModeState();
+      renderAfterInputMode();
       renderYearSummary();
       renderSelected('prev');
       renderSelected('after');
@@ -1363,17 +1513,21 @@
     function applyRelationToForm(relation) {
       state.mode = 'edit';
       state.editingRelationId = Number(relation.relationId);
+      state.afterInputMode = 'existing';
       state.selectedPrev = relation.prev.map(item => item.unitCode).filter(Boolean);
       state.selectedAfter = relation.after.map(item => item.unitCode).filter(Boolean);
+      state.draftAfterNewUnits = [];
       state.oneToOneType = relation.changeType === 'revised' ? 'revised' : 'renewed';
       changeYear.value = String(relation.changeYear);
       retainUntil.value = relation.retainUntilGradYear === null ? '' : String(relation.retainUntilGradYear);
       prevInput.value = '';
       afterInput.value = '';
+      resetNewAfterForm();
       hideFeedback();
       hideSearchMenu('prev');
       hideSearchMenu('after');
       renderModeState();
+      renderAfterInputMode();
       renderYearSummary();
       renderSelected('prev');
       renderSelected('after');
@@ -1407,9 +1561,125 @@
       resetRelationBtn.disabled = isSubmitting;
       prevAddBtn.disabled = isSubmitting;
       afterAddBtn.disabled = isSubmitting;
+      addAfterNewBtn.disabled = isSubmitting;
       addPrevBtn.disabled = isSubmitting;
       addAfterBtn.disabled = isSubmitting;
       renderPreview();
+    }
+
+    function resetNewAfterForm() {
+      newAfterName.value = '';
+      newAfterType.value = 'major';
+      newAfterCollegeCode.value = '';
+      newAfterDepartmentCode.value = '';
+      newAfterUnitCode.value = '';
+    }
+
+    function buildDraftUnitDto(draft) {
+      const pathNames = [];
+      const collegeName = state.unitsByCode.get(draft.collegeCode)?.unitName || draft.collegeCode;
+      const departmentName = draft.departmentCode
+        ? (state.unitsByCode.get(draft.departmentCode)?.unitName || draft.departmentCode)
+        : '';
+
+      if (collegeName) pathNames.push(collegeName);
+      if (departmentName) pathNames.push(departmentName);
+      pathNames.push(draft.unitName);
+
+      return {
+        unitCode: draft.unitCode,
+        unitName: draft.unitName,
+        unitType: draft.unitType,
+        unitTypeLabel: draft.unitType === 'department' ? '학과(전공)' : '학과(전공)',
+        collegeCode: draft.collegeCode,
+        departmentCode: draft.departmentCode || '',
+        majorCode: draft.unitType === 'major' ? draft.unitCode : '',
+        pathCodes: [draft.collegeCode, draft.departmentCode, draft.unitCode].filter(Boolean),
+        path: pathNames.join(' > '),
+        isTempCode: false,
+      };
+    }
+
+    function removeDraftAfterUnit(code) {
+      state.draftAfterNewUnits = state.draftAfterNewUnits.filter(unit => unit.unitCode !== code);
+      hideFeedback();
+      renderSelected('after');
+      renderPreview();
+    }
+
+    function addNewAfterUnitDraft() {
+      hideFeedback();
+
+      const unitName = clean(newAfterName.value);
+      const unitType = clean(newAfterType.value);
+      const collegeCode = clean(newAfterCollegeCode.value).toUpperCase();
+      const departmentCode = clean(newAfterDepartmentCode.value).toUpperCase();
+      const unitCode = clean(newAfterUnitCode.value).toUpperCase();
+
+      if (!unitName) {
+        showError('신규 학과(전공)명을 입력해 주세요.');
+        return;
+      }
+      if (!['department', 'major'].includes(unitType)) {
+        showError('신규 유형을 다시 선택해 주세요.');
+        return;
+      }
+      if (!collegeCode) {
+        showError('소속 단과대학 코드를 입력해 주세요.');
+        return;
+      }
+      if (!unitCode) {
+        showError('신규 학과(전공) 코드를 입력해 주세요.');
+        return;
+      }
+      if (unitType === 'department' && departmentCode) {
+        showError('학과 단위 신규 입력에는 학부 코드를 넣지 않습니다.');
+        return;
+      }
+
+      const college = state.unitsByCode.get(collegeCode);
+      if (!college || college.unitType !== 'college') {
+        showError('소속 단과대학 코드를 다시 확인해 주세요.');
+        return;
+      }
+
+      if (departmentCode) {
+        const department = state.unitsByCode.get(departmentCode);
+        if (!department || department.unitType !== 'department') {
+          showError('학부 코드를 다시 확인해 주세요.');
+          return;
+        }
+        if (department.collegeCode !== collegeCode) {
+          showError('학부 코드가 선택한 단과대학 소속과 맞지 않습니다.');
+          return;
+        }
+      }
+
+      if (state.unitsByCode.has(unitCode)) {
+        showError('이미 등록된 학과(전공) 코드입니다.');
+        return;
+      }
+      if (state.selectedPrev.includes(unitCode) || state.selectedAfter.includes(unitCode)) {
+        showError('이미 현재 변경 관계에 포함된 코드입니다.');
+        return;
+      }
+      if (state.draftAfterNewUnits.some(unit => unit.unitCode === unitCode)) {
+        showError('이미 추가한 신규 학과(전공) 코드입니다.');
+        return;
+      }
+
+      state.draftAfterNewUnits.push({
+        unitName,
+        unitType,
+        collegeCode,
+        departmentCode: unitType === 'department' ? '' : departmentCode,
+        unitCode,
+      });
+
+      resetNewAfterForm();
+      renderSelected('after');
+      renderPreview();
+      showStatus('신규 변경 후 학과(전공)을 저장 대기 목록에 추가했습니다.');
     }
 
     function resolveUnitCode(value, side) {

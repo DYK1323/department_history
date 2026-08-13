@@ -153,6 +153,27 @@ function normalizeCodeList(values, label) {
   return uniqueCodes;
 }
 
+function normalizeAfterNewUnitList(values) {
+  if (values === null || values === undefined) return [];
+  if (!Array.isArray(values)) {
+    throw new Error('afterNewUnits must be an array');
+  }
+
+  return values.map((value, index) => {
+    if (!value || typeof value !== 'object') {
+      throw new Error(`afterNewUnits[${index}] must be an object`);
+    }
+
+    return {
+      unitName: cleanText(value.unitName),
+      unitType: cleanText(value.unitType),
+      collegeCode: cleanText(value.collegeCode),
+      departmentCode: cleanText(value.departmentCode),
+      unitCode: cleanText(value.unitCode),
+    };
+  });
+}
+
 function sendJson(res, statusCode, payload) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -349,18 +370,74 @@ function normalizeRelationPayload(payload) {
       note: payload.relation.note,
       prevUnitCodes: payload.relation.prevUnitCodes,
       afterUnitCodes: payload.relation.afterUnitCodes,
+      afterNewUnits: payload.relation.afterNewUnits,
     };
   }
 
   return payload || {};
 }
 
-function validateRelationPayload(payload) {
+function validateAfterNewUnits(drafts, unitsByCode, usedCodes) {
+  return drafts.map((draft, index) => {
+    if (!draft.unitName) {
+      throw new Error(`afterNewUnits[${index}].unitName is required`);
+    }
+    if (!['department', 'major'].includes(draft.unitType)) {
+      throw new Error(`afterNewUnits[${index}].unitType must be department or major`);
+    }
+    if (!draft.collegeCode) {
+      throw new Error(`afterNewUnits[${index}].collegeCode is required`);
+    }
+    if (!draft.unitCode) {
+      throw new Error(`afterNewUnits[${index}].unitCode is required`);
+    }
+    if (usedCodes.has(draft.unitCode) || unitsByCode.has(draft.unitCode)) {
+      throw new Error(`afterNewUnits[${index}].unitCode already exists: ${draft.unitCode}`);
+    }
+
+    const college = unitsByCode.get(draft.collegeCode);
+    if (!college || college.unit_type !== 'college') {
+      throw new Error(`afterNewUnits[${index}].collegeCode is invalid: ${draft.collegeCode}`);
+    }
+
+    const departmentCode = draft.departmentCode || '';
+    if (draft.unitType === 'department' && departmentCode) {
+      throw new Error(`afterNewUnits[${index}].departmentCode must be empty for department`);
+    }
+
+    let parentUnitCode = draft.collegeCode;
+    if (departmentCode) {
+      const department = unitsByCode.get(departmentCode);
+      if (!department || department.unit_type !== 'department') {
+        throw new Error(`afterNewUnits[${index}].departmentCode is invalid: ${departmentCode}`);
+      }
+
+      const departmentPath = buildPathCodes(departmentCode, unitsByCode);
+      if (!departmentPath.includes(draft.collegeCode)) {
+        throw new Error(`afterNewUnits[${index}].departmentCode does not belong to ${draft.collegeCode}`);
+      }
+      parentUnitCode = departmentCode;
+    }
+
+    usedCodes.add(draft.unitCode);
+    return {
+      unitName: draft.unitName,
+      unitType: draft.unitType,
+      collegeCode: draft.collegeCode,
+      departmentCode,
+      unitCode: draft.unitCode,
+      parentUnitCode,
+    };
+  });
+}
+
+function validateRelationPayload(payload, unitsByCode = null) {
   const normalized = normalizeRelationPayload(payload);
   const changeYear = assertInteger(normalized.changeYear, 'changeYear');
   const changeType = cleanText(normalized.changeType);
   const prevUnitCodes = normalizeCodeList(normalized.prevUnitCodes, 'prevUnitCodes');
   const afterUnitCodes = normalizeCodeList(normalized.afterUnitCodes, 'afterUnitCodes');
+  const afterNewUnits = normalizeAfterNewUnitList(normalized.afterNewUnits);
   const retainUntilGradYear = assertInteger(
     normalized.retainUntilGradYear,
     'retainUntilGradYear',
@@ -375,16 +452,25 @@ function validateRelationPayload(payload) {
   if (prevUnitCodes.length < rule.minPrev) {
     throw new Error('prevUnitCodes does not satisfy the minimum count for this change type');
   }
-  if (afterUnitCodes.length < rule.minAfter) {
+  const usedAfterCodes = new Set([...prevUnitCodes, ...afterUnitCodes]);
+  const validatedAfterNewUnits = unitsByCode
+    ? validateAfterNewUnits(afterNewUnits, unitsByCode, usedAfterCodes)
+    : afterNewUnits;
+  const finalAfterUnitCodes = [
+    ...afterUnitCodes,
+    ...validatedAfterNewUnits.map(unit => unit.unitCode),
+  ];
+
+  if (finalAfterUnitCodes.length < rule.minAfter) {
     throw new Error('afterUnitCodes does not satisfy the minimum count for this change type');
   }
 
-  const overlap = prevUnitCodes.find(code => afterUnitCodes.includes(code));
+  const overlap = prevUnitCodes.find(code => finalAfterUnitCodes.includes(code));
   if (overlap) {
     throw new Error(`Unit code cannot appear on both sides of one relation: ${overlap}`);
   }
 
-  if (prevUnitCodes.length > 1 && afterUnitCodes.length > 1) {
+  if (prevUnitCodes.length > 1 && finalAfterUnitCodes.length > 1) {
     throw new Error('N x M relations are not supported in v1. Split this rule into separate entries.');
   }
 
@@ -394,8 +480,23 @@ function validateRelationPayload(payload) {
     retainUntilGradYear,
     note: nullableText(normalized.note),
     prevUnitCodes,
-    afterUnitCodes,
+    afterUnitCodes: finalAfterUnitCodes,
+    afterNewUnits: validatedAfterNewUnits,
   };
+}
+
+function buildExpandedUnitsByCode(unitsByCode, drafts) {
+  const expanded = new Map(unitsByCode);
+  drafts.forEach(draft => {
+    expanded.set(draft.unitCode, {
+      unit_code: draft.unitCode,
+      unit_name: draft.unitName,
+      unit_type: draft.unitType,
+      parent_unit_code: draft.parentUnitCode,
+      is_temp_code: 0,
+    });
+  });
+  return expanded;
 }
 
 async function loadBootstrapData() {
@@ -552,10 +653,11 @@ async function insertRelation(payload) {
     throw new Error('SQLite database does not exist');
   }
 
-  const relation = validateRelationPayload(payload);
   const { unitsByCode } = await loadUnits();
-  const prevEndpoints = relation.prevUnitCodes.map(code => deriveEndpoint(code, unitsByCode));
-  const afterEndpoints = relation.afterUnitCodes.map(code => deriveEndpoint(code, unitsByCode));
+  const relation = validateRelationPayload(payload, unitsByCode);
+  const expandedUnitsByCode = buildExpandedUnitsByCode(unitsByCode, relation.afterNewUnits);
+  const prevEndpoints = relation.prevUnitCodes.map(code => deriveEndpoint(code, expandedUnitsByCode));
+  const afterEndpoints = relation.afterUnitCodes.map(code => deriveEndpoint(code, expandedUnitsByCode));
 
   const ids = await sqliteQueryJson(`
     SELECT
@@ -567,6 +669,23 @@ async function insertRelation(payload) {
   let endpointId = currentIds.max_endpoint_id + 1;
 
   const statements = ['PRAGMA foreign_keys = ON;', 'BEGIN IMMEDIATE;'];
+  relation.afterNewUnits.forEach(unit => {
+    statements.push(`
+      INSERT INTO curriculum_unit (
+        unit_code,
+        unit_name,
+        unit_type,
+        parent_unit_code,
+        is_temp_code
+      ) VALUES (
+        ${sqlValue(unit.unitCode)},
+        ${sqlValue(unit.unitName)},
+        ${sqlValue(unit.unitType)},
+        ${sqlValue(unit.parentUnitCode)},
+        0
+      );
+    `);
+  });
   statements.push(`
     INSERT INTO change_relation (
       relation_id,
@@ -708,7 +827,6 @@ async function updateRelation(relationId, payload) {
   }
 
   const numericRelationId = assertInteger(relationId, 'relationId');
-  const relation = validateRelationPayload(payload);
   const existing = await sqliteQueryJson(`
     SELECT relation_id
     FROM change_relation
@@ -720,8 +838,10 @@ async function updateRelation(relationId, payload) {
   }
 
   const { unitsByCode } = await loadUnits();
-  const prevEndpoints = relation.prevUnitCodes.map(code => deriveEndpoint(code, unitsByCode));
-  const afterEndpoints = relation.afterUnitCodes.map(code => deriveEndpoint(code, unitsByCode));
+  const relation = validateRelationPayload(payload, unitsByCode);
+  const expandedUnitsByCode = buildExpandedUnitsByCode(unitsByCode, relation.afterNewUnits);
+  const prevEndpoints = relation.prevUnitCodes.map(code => deriveEndpoint(code, expandedUnitsByCode));
+  const afterEndpoints = relation.afterUnitCodes.map(code => deriveEndpoint(code, expandedUnitsByCode));
 
   const ids = await sqliteQueryJson(`
     SELECT (SELECT COALESCE(MAX(endpoint_id), 0) FROM change_relation_endpoint) AS max_endpoint_id;
@@ -729,6 +849,23 @@ async function updateRelation(relationId, payload) {
   let endpointId = Number((ids[0] || {}).max_endpoint_id || 0) + 1;
 
   const statements = ['PRAGMA foreign_keys = ON;', 'BEGIN IMMEDIATE;'];
+  relation.afterNewUnits.forEach(unit => {
+    statements.push(`
+      INSERT INTO curriculum_unit (
+        unit_code,
+        unit_name,
+        unit_type,
+        parent_unit_code,
+        is_temp_code
+      ) VALUES (
+        ${sqlValue(unit.unitCode)},
+        ${sqlValue(unit.unitName)},
+        ${sqlValue(unit.unitType)},
+        ${sqlValue(unit.parentUnitCode)},
+        0
+      );
+    `);
+  });
   statements.push(`
     UPDATE change_relation
     SET
