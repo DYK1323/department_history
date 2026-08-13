@@ -553,6 +553,7 @@
           year: Number(clean(row.change_year)),
           type: clean(row.change_type),
           validUntil: clean(row.valid_until),
+          note: clean(row.note),
           source: firstCode(row.prev_major_code, row.prev_dept_code, row.prev_college_code),
           target: firstCode(row.after_major_code, row.after_dept_code, row.after_college_code),
           prevPath: [row.prev_college_code, row.prev_dept_code, row.prev_major_code].map(clean).filter(Boolean),
@@ -1233,7 +1234,8 @@
       const message = validUntil === "9999"
         ? "현 재적생이 졸업할 때까지 유지"
         : `${escapeHtml(validUntil)}학년도 졸업자까지 유지`;
-      tooltip.innerHTML = `<strong>${escapeHtml(node.unit.name || node.code)}</strong><br>${message}`;
+      const noteLine = relatedEdge.note ? `<br><span style="color:var(--muted)">${escapeHtml(relatedEdge.note)}</span>` : "";
+      tooltip.innerHTML = `<strong>${escapeHtml(node.unit.name || node.code)}</strong><br>${message}${noteLine}`;
       tooltip.style.display = "block";
       moveTooltip(event);
     }
