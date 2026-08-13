@@ -1207,6 +1207,7 @@
         fillYearOptions();
         applyDefaultRetainUntil();
         renderAll();
+        await applyEditQueryParam();
       } catch (error) {
         errorBox.textContent = error.message || '초기 데이터를 불러오지 못했습니다.';
         errorBox.classList.remove('hidden');
