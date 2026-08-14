@@ -134,6 +134,7 @@
     .legend {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: 10px;
       margin-left: auto;
       justify-self: end;
@@ -142,12 +143,18 @@
       font-weight: 400;
     }
 
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+    }
+
     .legend i {
       display: inline-block;
       width: 16px;
       height: 3px;
       margin-right: 5px;
-      vertical-align: middle;
+      flex: 0 0 auto;
       background: var(--ink);
     }
 
@@ -833,7 +840,7 @@
 
     startYear.addEventListener("change", render);
     endYear.addEventListener("change", render);
-    searchBox.addEventListener("input", applySearch);
+    searchBox.addEventListener("input", () => applySearch({ revealMatch: true }));
     openEditorBtn.addEventListener("click", openEditorModal);
     resetBtn.addEventListener("click", resetFilters);
     editorCloseBtn.addEventListener("click", closeEditorModal);
@@ -1738,7 +1745,8 @@
       svg.querySelectorAll(".flow-line,.edge-label").forEach(el => el.remove());
     }
 
-    function applySearch() {
+    function applySearch(options = {}) {
+      const { revealMatch = false } = options;
       const term = searchBox.value.trim().toLowerCase();
       const nodes = canvas.querySelectorAll(".node");
       const boxes = canvas.querySelectorAll(".dept-box");
@@ -1823,7 +1831,26 @@
         edge.classList.toggle("focus", hit || edge.classList.contains("focus"));
         edge.classList.toggle("dimmed", !hit);
       });
+      if (revealMatch) revealTopMatchedNode(nodes, matchedKeys);
       updateDetailPanel();
+    }
+
+    function revealTopMatchedNode(nodes, matchedKeys) {
+      if (!matchedKeys.size) return;
+
+      const matches = [...nodes]
+        .filter(node => matchedKeys.has(node.dataset.nodeKey))
+        .sort((a, b) => {
+          const topDiff = a.offsetTop - b.offsetTop;
+          if (topDiff !== 0) return topDiff;
+          return a.offsetLeft - b.offsetLeft;
+        });
+
+      const topMatch = matches[0];
+      if (!topMatch) return;
+
+      const targetTop = Math.max(0, topMatch.offsetTop - yearHeader.offsetHeight - 24);
+      canvasWrap.scrollTo({ top: targetTop, behavior: "smooth" });
     }
 
     function connectedNodeKeys(startKey) {

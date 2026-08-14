@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="utf-8">
@@ -270,18 +270,21 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 18px;
-      align-items: start;
+      align-items: stretch;
     }
 
     .editor-column {
       display: grid;
       gap: 14px;
+      height: 100%;
       min-width: 0;
     }
 
     .column-card {
       display: grid;
+      align-content: start;
       gap: 12px;
+      height: 100%;
       padding: 16px;
       border: 1px solid var(--hairline);
       background: var(--panel);
@@ -312,6 +315,31 @@
       gap: 8px;
     }
 
+    .search-fields {
+      display: grid;
+      gap: 10px 12px;
+      align-items: end;
+    }
+
+    .search-fields.with-retain {
+      grid-template-columns: minmax(0, 1fr) 220px auto;
+    }
+
+    .search-fields.without-retain {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .search-field {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .search-field-action {
+      display: flex;
+      align-items: flex-end;
+    }
+
     .search-box {
       position: relative;
     }
@@ -320,6 +348,10 @@
       display: inline-flex;
       gap: 6px;
       flex-wrap: wrap;
+    }
+
+    #afterModeSwitch {
+      margin-bottom: 8px;
     }
 
     .inline-mode-switch .tag-toggle {
@@ -420,6 +452,10 @@
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 8px;
       align-items: center;
+    }
+
+    .search-row.search-row-single {
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .year-input-wrap {
@@ -529,6 +565,20 @@
       min-width: 0;
     }
 
+    .selected-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .recent-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
     .selected-top,
     .recent-top {
       display: flex;
@@ -549,14 +599,30 @@
     }
 
     .recent-top {
+      display: grid;
+      gap: 8px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .selected-top {
+      display: grid;
+      gap: 8px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .selected-actions,
+    .recent-actions {
+      display: inline-flex;
       align-items: center;
-      justify-content: flex-start;
-      flex-wrap: wrap;
+      justify-content: end;
+      flex: 0 0 auto;
     }
 
     .recent-summary {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       flex-wrap: wrap;
       gap: 6px;
       min-width: 0;
@@ -587,9 +653,10 @@
 
     .meta-row {
       display: flex;
+      align-items: center;
       flex-wrap: wrap;
-      gap: 6px 8px;
-      margin-top: 8px;
+      gap: 4px 6px;
+      margin-top: 0;
       color: var(--muted);
       font-size: 12px;
       line-height: 1.45;
@@ -598,6 +665,7 @@
     .meta-chip {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       min-height: 22px;
       padding: 0 8px;
       border: 1px solid var(--hairline);
@@ -834,24 +902,28 @@
               <div class="column-card">
                 <div class="column-head">
                   <h3 class="column-title">변경 전 학과 추가</h3>
-                  <button class="ghost-button" id="addPrevBtn" type="button">추가</button>
                 </div>
                 <div class="column-hint" id="prevHint">변경 전 기준의 학과(전공)를 선택합니다.</div>
                 <div class="search-block">
-                  <div class="search-box">
-                    <div class="search-row">
-                      <input id="prevInput" type="text" autocomplete="off" placeholder="학과명, 전공명, 코드 검색">
-                      <button class="icon-button" id="prevAddBtn" type="button">넣기</button>
+                  <div class="search-fields with-retain">
+                    <div class="search-field">
+                      <label class="field-label" for="prevInput">학과(전공)명</label>
+                      <div class="search-box">
+                        <div class="search-row search-row-single">
+                          <input id="prevInput" type="text" autocomplete="off" placeholder="학과명, 전공명, 코드 검색">
+                        </div>
+                        <div class="search-menu hidden" id="prevMenu"></div>
+                      </div>
                     </div>
-                    <div class="search-menu hidden" id="prevMenu"></div>
-                  </div>
-                  <div class="year-input-wrap">
-                    <label class="field-label" for="retainUntil">유지 학년도</label>
-                    <div class="retain-row">
+                    <div class="search-field">
+                      <label class="field-label" for="retainUntil">유지 학년도</label>
                       <input class="year-input" id="retainUntil" type="number" min="1900" step="1" placeholder="없으면 비움">
-                      <span class="summary-meta">숫자만 입력 · 예: 2028</span>
+                    </div>
+                    <div class="search-field-action">
+                      <button class="icon-button" id="prevAddBtn" type="button">추가</button>
                     </div>
                   </div>
+                  <div class="summary-meta">입력한 값은 지금 추가하는 항목에만 적용 · 예: 2028</div>
                 </div>
                 <div class="selected-list" id="prevSelected"></div>
               </div>
@@ -861,7 +933,6 @@
               <div class="column-card">
                 <div class="column-head">
                   <h3 class="column-title">변경 후 학과 추가</h3>
-                  <button class="ghost-button" id="addAfterBtn" type="button">추가</button>
                 </div>
                 <div class="column-hint" id="afterHint">변경 후 기준의 학과(전공)를 선택합니다.</div>
                 <div class="search-block">
@@ -871,12 +942,19 @@
                   </div>
 
                   <div id="afterExistingBlock">
-                    <div class="search-box">
-                      <div class="search-row">
-                        <input id="afterInput" type="text" autocomplete="off" placeholder="학과명, 전공명, 코드 검색">
-                        <button class="icon-button" id="afterAddBtn" type="button">넣기</button>
+                    <div class="search-fields without-retain">
+                      <div class="search-field">
+                        <label class="field-label" for="afterInput">학과(전공)명</label>
+                        <div class="search-box">
+                          <div class="search-row search-row-single">
+                            <input id="afterInput" type="text" autocomplete="off" placeholder="학과명, 전공명, 코드 검색">
+                          </div>
+                          <div class="search-menu hidden" id="afterMenu"></div>
+                        </div>
                       </div>
-                      <div class="search-menu hidden" id="afterMenu"></div>
+                      <div class="search-field-action">
+                        <button class="icon-button" id="afterAddBtn" type="button">추가</button>
+                      </div>
                     </div>
                   </div>
 
@@ -1033,8 +1111,6 @@
     const afterInput = document.getElementById('afterInput');
     const prevAddBtn = document.getElementById('prevAddBtn');
     const afterAddBtn = document.getElementById('afterAddBtn');
-    const addPrevBtn = document.getElementById('addPrevBtn');
-    const addAfterBtn = document.getElementById('addAfterBtn');
     const prevMenu = document.getElementById('prevMenu');
     const afterMenu = document.getElementById('afterMenu');
     const afterModeSwitch = document.getElementById('afterModeSwitch');
@@ -1094,8 +1170,6 @@
     prevAddBtn.addEventListener('click', () => addSelection('prev'));
     afterAddBtn.addEventListener('click', () => addSelection('after'));
     addAfterNewBtn.addEventListener('click', addNewAfterUnitDraft);
-    addPrevBtn.addEventListener('click', () => prevInput.focus());
-    addAfterBtn.addEventListener('click', () => afterInput.focus());
     afterModeSwitch.querySelectorAll('[data-after-mode]').forEach(button => {
       button.addEventListener('click', () => {
         state.afterInputMode = button.dataset.afterMode;
@@ -1215,7 +1289,10 @@
     }
 
     function fillYearOptions() {
-      const years = (state.bootstrap?.years || []).map(year => Number(year)).filter(Number.isInteger);
+      const years = (state.bootstrap?.years || [])
+        .map(year => Number(year))
+        .filter(Number.isInteger)
+        .sort((a, b) => a - b);
       const currentYear = new Date().getFullYear();
       const maxAvailableYear = Math.max(
         years.length ? years[years.length - 1] : currentYear,
@@ -1233,6 +1310,17 @@
         .map(year => `<option value="${escapeHtml(String(year))}">${escapeHtml(String(year))}학년도</option>`)
         .join('');
       changeYear.value = String(latestYear);
+    }
+
+    async function applyEditQueryParam() {
+      const params = new URLSearchParams(window.location.search);
+      const rawRelationId = clean(params.get('edit') || params.get('relationId'));
+      if (!rawRelationId) return;
+
+      const relationId = Number(rawRelationId);
+      if (!Number.isInteger(relationId) || relationId <= 0) return;
+
+      await enterEditMode(relationId);
     }
 
     function applyDefaultRetainUntil() {
@@ -1334,16 +1422,19 @@
 
       const sourceList = side === 'prev' ? state.selectedPrev : state.selectedAfter;
       const otherList = side === 'prev' ? state.selectedAfter : state.selectedPrev;
-      if (sourceList.includes(code)) {
+      if (sourceList.some(item => item.unitCode === code)) {
         showError('이미 추가된 학과(전공)입니다.');
         return;
       }
-      if (otherList.includes(code)) {
+      if (otherList.some(item => item.unitCode === code)) {
         showError('같은 학과(전공)를 변경 전과 변경 후에 동시에 넣을 수 없습니다.');
         return;
       }
 
-      sourceList.push(code);
+      sourceList.push({
+        unitCode: code,
+        retainUntilGradYear: getDefaultRetainUntilGradYear(),
+      });
       input.value = '';
       hideSearchMenu(side);
       renderSelected(side);
@@ -1352,9 +1443,9 @@
 
     function removeSelection(side, code) {
       if (side === 'prev') {
-        state.selectedPrev = state.selectedPrev.filter(item => item !== code);
+        state.selectedPrev = state.selectedPrev.filter(item => item.unitCode !== code);
       } else {
-        state.selectedAfter = state.selectedAfter.filter(item => item !== code);
+        state.selectedAfter = state.selectedAfter.filter(item => item.unitCode !== code);
       }
       hideFeedback();
       renderSelected(side);
@@ -1363,29 +1454,30 @@
 
     function renderSelected(side) {
       const container = side === 'prev' ? prevSelected : afterSelected;
-      const codes = side === 'prev' ? state.selectedPrev : state.selectedAfter;
+      const entries = side === 'prev' ? state.selectedPrev : state.selectedAfter;
       const draftUnits = side === 'after' ? state.draftAfterNewUnits : [];
 
-      if (!codes.length && !draftUnits.length) {
+      if (!entries.length && !draftUnits.length) {
         container.innerHTML = `<div class="empty">${side === 'prev' ? '아직 추가된 변경 전 학과(전공)가 없습니다.' : '아직 추가된 변경 후 학과(전공)가 없습니다.'}</div>`;
         return;
       }
 
-      const existingMarkup = codes.map(code => {
-        const unit = state.unitsByCode.get(code);
+      const existingMarkup = entries.map(entry => {
+        const unit = state.unitsByCode.get(entry.unitCode);
         if (!unit) return '';
         return `
           <div class="selected-item">
             <div class="selected-top">
-              <div class="selected-name">${escapeHtml(unit.unitName)}</div>
-              <button class="ghost-button" type="button" data-remove-side="${side}" data-remove-code="${escapeHtml(code)}">삭제</button>
+              <div class="selected-name">${escapeHtml(unit.path)}</div>
+              <div class="meta-row">
+                <span class="meta-chip">${escapeHtml(unit.unitTypeLabel)}</span>
+                <span>${escapeHtml(unit.unitCode)}${unit.isTempCode ? ' (임시코드)' : ''}</span>
+                <span>${escapeHtml(getRetainDisplayCopy(entry.retainUntilGradYear))}</span>
+              </div>
             </div>
-            <div class="meta-row">
-              <span class="meta-chip">${escapeHtml(unit.unitTypeLabel)}</span>
-              <span>${escapeHtml(unit.unitCode)}</span>
-              ${unit.isTempCode ? '<span class="meta-chip">임시코드</span>' : ''}
+            <div class="selected-actions">
+              <button class="ghost-button" type="button" data-remove-side="${side}" data-remove-code="${escapeHtml(entry.unitCode)}">삭제</button>
             </div>
-            <div class="path-copy">${escapeHtml(unit.path)}</div>
           </div>
         `;
       }).join('');
@@ -1395,14 +1487,16 @@
         return `
           <div class="selected-item">
             <div class="selected-top">
-              <div class="selected-name">${escapeHtml(unit.unitName)}</div>
+              <div class="selected-name">${escapeHtml(unit.path)}</div>
+              <div class="meta-row">
+                <span class="meta-chip">신규</span>
+                <span>${escapeHtml(unit.unitCode)}</span>
+                <span>${escapeHtml(getRetainDisplayCopy(draft.retainUntilGradYear))}</span>
+              </div>
+            </div>
+            <div class="selected-actions">
               <button class="ghost-button" type="button" data-remove-draft-code="${escapeHtml(draft.unitCode)}">삭제</button>
             </div>
-            <div class="meta-row">
-              <span class="meta-chip">신규</span>
-              <span>${escapeHtml(unit.unitCode)}</span>
-            </div>
-            <div class="path-copy">${escapeHtml(unit.path)}</div>
           </div>
         `;
       }).join('');
@@ -1442,10 +1536,23 @@
 
     function buildPreview() {
       const year = clean(changeYear.value);
-      const prev = state.selectedPrev.map(code => state.unitsByCode.get(code)).filter(Boolean);
+      const prev = state.selectedPrev
+        .map(item => {
+          const unit = state.unitsByCode.get(item.unitCode);
+          return unit ? { ...unit, retainUntilGradYear: item.retainUntilGradYear } : null;
+        })
+        .filter(Boolean);
       const after = [
-        ...state.selectedAfter.map(code => state.unitsByCode.get(code)).filter(Boolean),
-        ...state.draftAfterNewUnits.map(buildDraftUnitDto),
+        ...state.selectedAfter
+          .map(item => {
+            const unit = state.unitsByCode.get(item.unitCode);
+            return unit ? { ...unit, retainUntilGradYear: item.retainUntilGradYear } : null;
+          })
+          .filter(Boolean),
+        ...state.draftAfterNewUnits.map(draft => ({
+          ...buildDraftUnitDto(draft),
+          retainUntilGradYear: draft.retainUntilGradYear ?? null,
+        })),
       ];
       const errors = [];
       const typeInfo = inferChangeType(prev.length, after.length);
@@ -1464,13 +1571,15 @@
         errors.push('변경 전 또는 변경 후 학과(전공)를 먼저 추가해 주세요.');
       }
 
-      const retentionValue = clean(retainUntil.value);
-      if (retentionValue && !/^\d+$/.test(retentionValue)) {
+      const allRetainValues = [...state.selectedPrev, ...state.selectedAfter, ...state.draftAfterNewUnits]
+        .map(item => item.retainUntilGradYear)
+        .filter(value => value !== null && value !== undefined);
+      if (allRetainValues.some(value => !Number.isInteger(value))) {
         errors.push('유지 학년도는 숫자로 입력해 주세요.');
       }
 
       const sentence = buildSentence(type, prev, after);
-      const retainCopy = retentionValue ? `${retentionValue}학년도 졸업자까지 유지` : '일괄 변경';
+      const retainCopy = getCollectionRetainDisplayCopy([...prev, ...after]);
       const summary = year ? `${year}학년도 · ${typeLabel}` : `${typeLabel}`;
       const meta = [summary, retainCopy].filter(Boolean).join(' · ');
 
@@ -1481,6 +1590,34 @@
         meta,
         errors,
       };
+    }
+
+    function getDefaultRetainUntilGradYear() {
+      return normalizeRetainYearValue(retainUntil.value);
+    }
+
+    function normalizeRetainYearValue(value) {
+      const cleaned = clean(value);
+      if (!cleaned) return null;
+      return /^\d+$/.test(cleaned) ? Number(cleaned) : null;
+    }
+
+    function getRetainDisplayCopy(retainUntilGradYear) {
+      return Number.isInteger(retainUntilGradYear)
+        ? `${retainUntilGradYear}학년도 졸업자까지 유지`
+        : '일괄 변경';
+    }
+
+    function getCollectionRetainDisplayCopy(items) {
+      if (!items.length) {
+        return getRetainDisplayCopy(getDefaultRetainUntilGradYear());
+      }
+
+      const values = [...new Set(items.map(item => item.retainUntilGradYear ?? null))];
+      if (values.length === 1) {
+        return getRetainDisplayCopy(values[0]);
+      }
+      return '유지 학년도 개별 설정';
     }
 
     function inferChangeType(prevCount, afterCount) {
@@ -1511,8 +1648,11 @@
     function buildSentence(type, prev, after) {
       const prevText = prev.map(displayUnit).join(', ');
       const afterText = after.map(displayUnit).join(', ');
-      const retentionValue = clean(retainUntil.value);
-      const retentionYear = Number(retentionValue);
+      const retainValues = [...prev, ...after].map(item => item.retainUntilGradYear ?? null);
+      const uniqueRetainValues = [...new Set(retainValues)];
+      const retentionYear = uniqueRetainValues.length === 1 && Number.isInteger(uniqueRetainValues[0])
+        ? uniqueRetainValues[0]
+        : null;
 
       if (
         Number.isInteger(retentionYear) &&
@@ -1545,7 +1685,7 @@
 
     function syncInputHints(type) {
       const prevCount = state.selectedPrev.length;
-      const afterCount = state.selectedAfter.length;
+      const afterCount = state.selectedAfter.length + state.draftAfterNewUnits.length;
 
       if (type === 'created') {
         prevHint.textContent = '신설은 변경 전 없이 저장할 수 있습니다. 필요하면 이전 기준을 추가해 다른 유형으로 전환할 수 있습니다.';
@@ -1594,9 +1734,7 @@
       recentList.innerHTML = items.map(item => {
         const prevText = item.prev.map(displayUnit).join(', ') || '없음';
         const afterText = item.after.map(displayUnit).join(', ') || '없음';
-        const retain = item.retainUntilGradYear
-          ? `${item.retainUntilGradYear}학년도 졸업자까지 유지`
-          : '일괄 변경';
+        const retain = getCollectionRetainDisplayCopy([...item.prev, ...item.after]);
         const relationSummary = buildRecentRelationSummary(item.changeType, prevText, afterText);
         return `
           <div class="recent-item">
@@ -1605,11 +1743,13 @@
                 <span class="recent-year">${escapeHtml(String(item.changeYear))}학년도</span>
                 <span class="recent-divider">|</span>
                 <span class="recent-relation">${escapeHtml(relationSummary)}</span>
+                <span class="meta-chip">${escapeHtml(item.changeTypeLabel)}</span>
               </div>
-              <span class="meta-chip">${escapeHtml(item.changeTypeLabel)}</span>
+              <div class="meta-row">
+                <span>${escapeHtml(retain)}</span>
+              </div>
             </div>
-            <div class="meta-row">
-              <span>${escapeHtml(retain)}</span>
+            <div class="recent-actions">
               <button
                 class="ghost-button"
                 type="button"
@@ -1644,10 +1784,15 @@
         const payload = {
           changeYear: Number(clean(changeYear.value)),
           changeType: preview.typeInfo.type,
-          retainUntilGradYear: clean(retainUntil.value) ? Number(clean(retainUntil.value)) : null,
           note: null,
-          prevUnitCodes: [...state.selectedPrev],
-          afterUnitCodes: [...state.selectedAfter],
+          prevEndpoints: state.selectedPrev.map(item => ({ ...item })),
+          afterEndpoints: [
+            ...state.selectedAfter.map(item => ({ ...item })),
+            ...state.draftAfterNewUnits.map(unit => ({
+              unitCode: unit.unitCode,
+              retainUntilGradYear: unit.retainUntilGradYear ?? null,
+            })),
+          ],
           afterNewUnits: state.draftAfterNewUnits.map(unit => ({ ...unit })),
         };
 
@@ -1723,8 +1868,14 @@
       state.mode = 'edit';
       state.editingRelationId = Number(relation.relationId);
       state.afterInputMode = 'existing';
-      state.selectedPrev = relation.prev.map(item => item.unitCode).filter(Boolean);
-      state.selectedAfter = relation.after.map(item => item.unitCode).filter(Boolean);
+      state.selectedPrev = relation.prev.map(item => ({
+        unitCode: item.unitCode,
+        retainUntilGradYear: item.retainUntilGradYear ?? null,
+      })).filter(item => item.unitCode);
+      state.selectedAfter = relation.after.map(item => ({
+        unitCode: item.unitCode,
+        retainUntilGradYear: item.retainUntilGradYear ?? null,
+      })).filter(item => item.unitCode);
       state.draftAfterNewUnits = [];
       state.oneToOneType = relation.changeType === 'revised' ? 'revised' : 'renewed';
       changeYear.value = String(relation.changeYear);
@@ -1773,8 +1924,6 @@
       prevAddBtn.disabled = isSubmitting;
       afterAddBtn.disabled = isSubmitting;
       addAfterNewBtn.disabled = isSubmitting;
-      addPrevBtn.disabled = isSubmitting;
-      addAfterBtn.disabled = isSubmitting;
       renderPreview();
     }
 
@@ -1919,7 +2068,10 @@
         showError(`이미 등록된 학과(전공) 코드입니다: ${describeExistingUnitByCode(unitCode)}.`);
         return;
       }
-      if (state.selectedPrev.includes(unitCode) || state.selectedAfter.includes(unitCode)) {
+      if (
+        state.selectedPrev.some(item => item.unitCode === unitCode) ||
+        state.selectedAfter.some(item => item.unitCode === unitCode)
+      ) {
         showError('이미 현재 변경 관계에 포함된 코드입니다.');
         return;
       }
@@ -1935,6 +2087,7 @@
         departmentCode,
         departmentName,
         unitCode,
+        retainUntilGradYear: getDefaultRetainUntilGradYear(),
       });
 
       resetNewAfterForm();
@@ -2071,15 +2224,15 @@
       const prevAllowed = new Set(getSelectableUnitsForSide('prev').map(unit => unit.unitCode));
       const afterAllowed = new Set(getSelectableUnitsForSide('after').map(unit => unit.unitCode));
 
-      state.selectedPrev = state.selectedPrev.filter(code => prevAllowed.has(code));
-      state.selectedAfter = state.selectedAfter.filter(code => afterAllowed.has(code));
+      state.selectedPrev = state.selectedPrev.filter(item => prevAllowed.has(item.unitCode));
+      state.selectedAfter = state.selectedAfter.filter(item => afterAllowed.has(item.unitCode));
     }
 
     function showSearchMenu(side) {
       const input = side === 'prev' ? prevInput : afterInput;
       const menu = side === 'prev' ? prevMenu : afterMenu;
-      const selectedCodes = new Set(side === 'prev' ? state.selectedPrev : state.selectedAfter);
-      const otherCodes = new Set(side === 'prev' ? state.selectedAfter : state.selectedPrev);
+      const selectedCodes = new Set((side === 'prev' ? state.selectedPrev : state.selectedAfter).map(item => item.unitCode));
+      const otherCodes = new Set((side === 'prev' ? state.selectedAfter : state.selectedPrev).map(item => item.unitCode));
       const query = clean(input.value).toLowerCase();
       const maxResults = side === 'prev' ? 100 : 12;
       const matches = getSelectableUnitsForSide(side)

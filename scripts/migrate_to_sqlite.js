@@ -183,11 +183,11 @@ function buildDataSql(dimRows, relationRows) {
 
       statements.push(
         `INSERT INTO change_relation_endpoint (` +
-          `endpoint_id, relation_id, side, unit_code, college_code, department_code, major_code, sort_order` +
+          `endpoint_id, relation_id, side, unit_code, college_code, department_code, major_code, retain_until_grad_year, sort_order` +
         `) VALUES (` +
           `${sqlValue(endpointId)}, ${sqlValue(relationId)}, ${sqlValue(side)}, ${sqlValue(unitCode)}, ` +
           `${sqlValue(row[`${side}_college_code`])}, ${sqlValue(row[`${side}_dept_code`])}, ` +
-          `${sqlValue(row[`${side}_major_code`])}, 0` +
+          `${sqlValue(row[`${side}_major_code`])}, ${sqlValue(retainUntil)}, 0` +
         `);`
       );
       endpointId += 1;

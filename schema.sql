@@ -30,6 +30,7 @@ CREATE TABLE change_relation_endpoint (
   college_code TEXT REFERENCES curriculum_unit(unit_code),
   department_code TEXT REFERENCES curriculum_unit(unit_code),
   major_code TEXT REFERENCES curriculum_unit(unit_code),
+  retain_until_grad_year INTEGER,
   sort_order INTEGER NOT NULL DEFAULT 0,
   UNIQUE (relation_id, side, unit_code)
 );
@@ -66,8 +67,8 @@ SELECT
   after.major_code AS after_major_code,
   cr.change_type AS change_type,
   CASE
-    WHEN cr.retain_until_grad_year IS NULL THEN ''
-    ELSE CAST(cr.retain_until_grad_year AS TEXT)
+    WHEN COALESCE(prev.retain_until_grad_year, after.retain_until_grad_year, cr.retain_until_grad_year) IS NULL THEN ''
+    ELSE CAST(COALESCE(prev.retain_until_grad_year, after.retain_until_grad_year, cr.retain_until_grad_year) AS TEXT)
   END AS valid_until,
   COALESCE(cr.note, '') AS note
 FROM change_relation cr
