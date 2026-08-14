@@ -1,0 +1,2346 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>편제개편 입력</title>
+  <style>
+    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css");
+
+    :root {
+      --ink: #000000;
+      --ink-soft: #31302e;
+      --paper: #f6f5f4;
+      --panel: #ffffff;
+      --canvas: #ffffff;
+      --line: #615d59;
+      --muted: #615d59;
+      --faint: #a39e98;
+      --hairline: #e6e6e6;
+      --accent: #0075de;
+      --accent-active: #005bab;
+      --created: #1aae39;
+      --revised: #005bab;
+      --renewed: #7b61d1;
+      --closed: #d64545;
+      --merged: #dd5b00;
+      --splitted: #2a9d99;
+      --page-max-width: 1680px;
+      --page-gutter: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Pretendard Variable", "Pretendard", "Segoe UI", "Malgun Gothic", sans-serif;
+      font-weight: 400;
+    }
+
+    body {
+      min-height: 100vh;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(246, 245, 244, 0.94);
+      border-bottom: 1px solid var(--hairline);
+      backdrop-filter: blur(10px);
+    }
+
+    .app-titlebar,
+    .page-shell {
+      width: min(calc(100% - 2 * var(--page-gutter)), var(--page-max-width));
+      margin: 0 auto;
+    }
+
+    .app-titlebar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 19px;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .brand-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .toolbar label,
+    .field-label,
+    .summary-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .toolbar label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .toolbar select,
+    .action-link,
+    .icon-button,
+    .primary-button,
+    .ghost-button,
+    .tag-toggle {
+      min-height: 34px;
+      border: 1px solid var(--hairline);
+      border-radius: 0;
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .toolbar select,
+    .search-row input,
+    .year-input {
+      min-height: 34px;
+      border: 1px solid var(--hairline);
+      border-radius: 0;
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 13px;
+      padding: 6px 8px;
+    }
+
+    .action-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      text-decoration: none;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .page-shell {
+      padding: 24px 0 40px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .surface {
+      border: 1px solid var(--hairline);
+      border-radius: 0;
+      background: rgba(255, 255, 255, 0.94);
+      overflow: hidden;
+    }
+
+    .surface-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .surface-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    .surface-copy {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .surface-body {
+      display: grid;
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .summary-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 12px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--hairline);
+    }
+
+    .summary-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .summary-status {
+      min-height: 24px;
+      padding: 0 10px;
+      border-radius: 99px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      background: var(--ink);
+      color: var(--panel);
+    }
+
+    .summary-status.is-created { background: var(--created); }
+    .summary-status.is-revised { background: var(--revised); }
+    .summary-status.is-renewed { background: var(--renewed); }
+    .summary-status.is-closed { background: var(--closed); }
+    .summary-status.is-merged { background: var(--merged); }
+    .summary-status.is-splitted { background: var(--splitted); }
+    .summary-status.is-pending {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--hairline);
+    }
+    .summary-status.is-invalid {
+      background: #fff1df;
+      color: #b96800;
+      border: 1px solid #f2d1a2;
+    }
+
+    .type-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tag-toggle {
+      padding: 0 10px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .tag-toggle.is-active {
+      border-color: var(--ink);
+      background: var(--ink);
+      color: var(--panel);
+      font-weight: 600;
+    }
+
+    .editor-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .editor-column {
+      display: grid;
+      gap: 14px;
+      height: 100%;
+      min-width: 0;
+    }
+
+    .column-card {
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      height: 100%;
+      padding: 16px;
+      border: 1px solid var(--hairline);
+      background: var(--panel);
+      min-width: 0;
+    }
+
+    .column-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .column-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .column-hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .search-block {
+      display: grid;
+      gap: 8px;
+    }
+
+    .search-fields {
+      display: grid;
+      gap: 10px 12px;
+      align-items: end;
+    }
+
+    .search-fields.with-retain {
+      grid-template-columns: minmax(0, 1fr) 220px auto;
+    }
+
+    .search-fields.without-retain {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .search-field {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .search-field-action {
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .inline-mode-switch {
+      display: inline-flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    #afterModeSwitch {
+      margin-bottom: 8px;
+    }
+
+    .inline-mode-switch .tag-toggle {
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 99px;
+    }
+
+    .inline-form {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--hairline);
+      background: #fcfcfc;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 12px;
+    }
+
+    .field-grid label,
+    .inline-form label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .field-grid input,
+    .field-grid select,
+    .inline-form input,
+    .inline-form select {
+      min-height: 36px;
+      padding: 0 10px;
+      border: 1px solid var(--hairline);
+      background: var(--panel);
+      color: var(--ink);
+      font: inherit;
+    }
+
+    .field-grid .full-span {
+      grid-column: 1 / -1;
+    }
+
+    .field-grid .span-2 {
+      grid-column: span 2;
+    }
+
+    .inline-subsection {
+      display: grid;
+      gap: 8px;
+      padding-top: 2px;
+    }
+
+    .inline-subsection-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .inline-subsection-title {
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .inline-subsection-copy {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .inline-search-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    .inline-search-row input {
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid var(--hairline);
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    .search-row,
+    .retain-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .search-row.search-row-single {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .year-input-wrap {
+      display: grid;
+      gap: 6px;
+    }
+
+    .icon-button,
+    .ghost-button,
+    .primary-button {
+      padding: 0 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .icon-button,
+    .ghost-button {
+      background: var(--panel);
+      color: var(--ink);
+    }
+
+    .primary-button {
+      border-color: var(--ink);
+      background: var(--ink);
+      color: var(--panel);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      border-color: var(--faint);
+      background: var(--panel);
+      color: var(--faint);
+    }
+
+    .selected-list,
+    .recent-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .search-menu {
+      position: absolute;
+      top: calc(100% + 1px);
+      left: 0;
+      right: 0;
+      z-index: 25;
+      max-height: 280px;
+      overflow: auto;
+      border: 1px solid var(--hairline);
+      background: var(--panel);
+      box-shadow: none;
+    }
+
+    .search-option {
+      display: grid;
+      gap: 4px;
+      width: 100%;
+      padding: 10px 12px;
+      border: 0;
+      border-bottom: 1px solid var(--hairline);
+      background: var(--panel);
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .search-option:last-child {
+      border-bottom: 0;
+    }
+
+    .search-option:hover,
+    .search-option.is-active {
+      background: #f6f5f4;
+    }
+
+    .search-option-title {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.45;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
+    .search-option-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
+    .empty {
+      padding: 12px;
+      border: 1px dashed var(--hairline);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      background: #fcfcfc;
+    }
+
+    .selected-item,
+    .recent-item {
+      border: 1px solid var(--hairline);
+      background: var(--panel);
+      padding: 12px;
+      min-width: 0;
+    }
+
+    .selected-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .recent-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .selected-top,
+    .recent-top {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .selected-name,
+    .recent-title {
+      min-width: 0;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.45;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
+    .recent-top {
+      display: grid;
+      gap: 8px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .selected-top {
+      display: grid;
+      gap: 8px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .selected-actions,
+    .recent-actions {
+      display: inline-flex;
+      align-items: center;
+      justify-content: end;
+      flex: 0 0 auto;
+    }
+
+    .recent-summary {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .recent-year {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.45;
+      white-space: nowrap;
+    }
+
+    .recent-divider {
+      color: var(--faint);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .recent-relation {
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.45;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px 6px;
+      margin-top: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 22px;
+      padding: 0 8px;
+      border: 1px solid var(--hairline);
+      border-radius: 99px;
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .path-copy,
+    .recent-copy,
+    .preview-copy {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
+    .preview-box {
+      display: grid;
+      gap: 10px;
+      padding: 14px 16px;
+      border: 1px solid var(--hairline);
+      background: #fcfcfc;
+    }
+
+    .preview-title {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+
+    .mode-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--hairline);
+      background: #fffaf1;
+      color: var(--ink);
+    }
+
+    .mode-banner-title {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+
+    .mode-banner-copy {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0, 0, 0, 0.24);
+    }
+
+    #relationEditorSection.is-edit-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      z-index: 70;
+      width: min(calc(100vw - 32px), 1160px);
+      max-height: calc(100vh - 40px);
+      overflow: auto;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+      background: rgba(255, 255, 255, 0.98);
+    }
+
+    #relationEditorSection.is-edit-modal .surface-head {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: rgba(255, 255, 255, 0.98);
+    }
+
+    .feedback {
+      display: grid;
+      gap: 10px;
+    }
+
+    .error-box,
+    .status-box {
+      padding: 12px 14px;
+      border: 1px solid var(--hairline);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .error-box {
+      background: #fff4f4;
+      color: var(--closed);
+      border-color: #f0cccc;
+    }
+
+    .status-box {
+      background: #f4fbf6;
+      color: #17754b;
+      border-color: #cfe5d6;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding-top: 6px;
+    }
+
+    .action-copy {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1120px) {
+      .app-titlebar {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .toolbar {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .editor-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      :root {
+        --page-gutter: 12px;
+      }
+
+      .toolbar {
+        flex-wrap: wrap;
+      }
+
+      .toolbar label,
+      .toolbar select,
+      .action-link {
+        width: 100%;
+      }
+
+      .toolbar label {
+        display: grid;
+      }
+
+      .search-row,
+      .retain-row,
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .action-buttons,
+      .ghost-button,
+      .primary-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-titlebar">
+      <div class="brand">
+        <h1>편제개편 입력</h1>
+        <span class="brand-kicker">ADMIN</span>
+      </div>
+      <div class="toolbar">
+        <label for="changeYear">
+          변경 학년도
+          <select id="changeYear"></select>
+        </label>
+      </div>
+      <a class="action-link" href="/index.html">편제 변경 이력 보기</a>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <div class="stack">
+      <section class="surface" id="relationEditorSection">
+        <div class="surface-head">
+          <div>
+            <h2 class="surface-title" id="relationEditorTitle">변경 관계 입력</h2>
+            <div class="surface-copy" id="yearSummary"></div>
+          </div>
+        </div>
+        <div class="surface-body">
+          <div class="summary-bar">
+            <span class="summary-label">변경구분</span>
+            <span class="summary-status is-pending" id="typeBadge">선택 대기</span>
+            <div class="type-switch hidden" id="typeSwitch">
+              <button class="tag-toggle is-active" type="button" data-type-choice="renewed">개편</button>
+              <button class="tag-toggle" type="button" data-type-choice="revised">명칭변경</button>
+            </div>
+            <div class="summary-meta" id="summaryMeta">변경 전 또는 변경 후 학과(전공)를 추가하면 변경구분이 자동으로 결정됩니다.</div>
+          </div>
+
+          <div class="mode-banner hidden" id="modeBanner">
+            <div>
+              <div class="mode-banner-title" id="modeBannerTitle">수정 모드</div>
+              <div class="mode-banner-copy" id="modeBannerCopy">관계를 불러와 수정 중입니다.</div>
+            </div>
+            <button class="ghost-button" id="cancelEditBtn" type="button">수정 취소</button>
+          </div>
+
+          <div class="editor-grid">
+            <div class="editor-column">
+              <div class="column-card">
+                <div class="column-head">
+                  <h3 class="column-title">변경 전 학과 추가</h3>
+                </div>
+                <div class="column-hint" id="prevHint">변경 전 기준의 학과(전공)를 선택합니다.</div>
+                <div class="search-block">
+                  <div class="search-fields with-retain">
+                    <div class="search-field">
+                      <label class="field-label" for="prevInput">학과(전공)명</label>
+                      <div class="search-box">
+                        <div class="search-row search-row-single">
+                          <input id="prevInput" type="text" autocomplete="off" placeholder="학과명, 전공명, 코드 검색">
+                        </div>
+                        <div class="search-menu hidden" id="prevMenu"></div>
+                      </div>
+                    </div>
+                    <div class="search-field">
+                      <label class="field-label" for="retainUntil">유지 학년도</label>
+                      <input class="year-input" id="retainUntil" type="number" min="1900" step="1" placeholder="없으면 비움">
+                    </div>
+                    <div class="search-field-action">
+                      <button class="icon-button" id="prevAddBtn" type="button">추가</button>
+                    </div>
+                  </div>
+                  <div class="summary-meta">입력한 값은 지금 추가하는 항목에만 적용 · 예: 2028</div>
+                </div>
+                <div class="selected-list" id="prevSelected"></div>
+              </div>
+            </div>
+
+            <div class="editor-column">
+              <div class="column-card">
+                <div class="column-head">
+                  <h3 class="column-title">변경 후 학과 추가</h3>
+                </div>
+                <div class="column-hint" id="afterHint">변경 후 기준의 학과(전공)를 선택합니다.</div>
+                <div class="search-block">
+                  <div class="inline-mode-switch" id="afterModeSwitch">
+                    <button class="tag-toggle is-active" type="button" data-after-mode="existing">기존 선택</button>
+                    <button class="tag-toggle" type="button" data-after-mode="new">신규 입력</button>
+                  </div>
+
+                  <div id="afterExistingBlock">
+                    <div class="search-fields without-retain">
+                      <div class="search-field">
+                        <label class="field-label" for="afterInput">학과(전공)명</label>
+                        <div class="search-box">
+                          <div class="search-row search-row-single">
+                            <input id="afterInput" type="text" autocomplete="off" placeholder="학과명, 전공명, 코드 검색">
+                          </div>
+                          <div class="search-menu hidden" id="afterMenu"></div>
+                        </div>
+                      </div>
+                      <div class="search-field-action">
+                        <button class="icon-button" id="afterAddBtn" type="button">추가</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="inline-form hidden" id="afterNewBlock">
+                    <div class="inline-subsection">
+                      <div class="inline-subsection-head">
+                        <div class="inline-subsection-title">단과대학</div>
+                        <div class="inline-mode-switch" id="afterNewCollegeMode">
+                          <button class="tag-toggle is-active" type="button" data-after-college-mode="existing">기존 선택</button>
+                          <button class="tag-toggle" type="button" data-after-college-mode="new">신규 입력</button>
+                        </div>
+                      </div>
+                      <div class="inline-subsection-copy">기존 단과대학을 선택하거나, 없으면 명칭과 코드를 함께 입력합니다.</div>
+                      <div id="afterNewCollegeExistingBlock">
+                        <div class="search-box">
+                          <div class="inline-search-row">
+                            <input id="newAfterCollegeSearch" type="text" autocomplete="off" placeholder="단과대학명, 코드 검색">
+                          </div>
+                          <div class="search-menu hidden" id="newAfterCollegeMenu"></div>
+                        </div>
+                      </div>
+                      <div class="field-grid hidden" id="afterNewCollegeNewBlock">
+                        <label for="newAfterCollegeName">
+                          단과대학명
+                          <input id="newAfterCollegeName" type="text" placeholder="예: 글로벌미래대학">
+                        </label>
+                        <label for="newAfterCollegeCode">
+                          단과대학코드
+                          <input id="newAfterCollegeCode" type="text" placeholder="예: H990000">
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="inline-subsection">
+                      <div class="inline-subsection-head">
+                        <div class="inline-subsection-title">학부</div>
+                        <div class="inline-mode-switch" id="afterNewDepartmentMode">
+                          <button class="tag-toggle is-active" type="button" data-after-department-mode="none">없음</button>
+                          <button class="tag-toggle" type="button" data-after-department-mode="existing">기존 선택</button>
+                          <button class="tag-toggle" type="button" data-after-department-mode="new">신규 입력</button>
+                        </div>
+                      </div>
+                      <div class="inline-subsection-copy">학부가 없으면 학과로, 있으면 해당 학부 아래 전공으로 저장됩니다.</div>
+                      <div id="afterNewDepartmentExistingBlock" class="hidden">
+                        <div class="search-box">
+                          <div class="inline-search-row">
+                            <input id="newAfterDepartmentSearch" type="text" autocomplete="off" placeholder="학부명, 코드 검색">
+                          </div>
+                          <div class="search-menu hidden" id="newAfterDepartmentMenu"></div>
+                        </div>
+                      </div>
+                      <div class="field-grid hidden" id="afterNewDepartmentNewBlock">
+                        <label for="newAfterDepartmentName">
+                          학부명
+                          <input id="newAfterDepartmentName" type="text" placeholder="예: 창업융합학부">
+                        </label>
+                        <label for="newAfterDepartmentCode">
+                          학부코드
+                          <input id="newAfterDepartmentCode" type="text" placeholder="예: HZZ0100">
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="field-grid">
+                      <label for="newAfterName">
+                        학과(전공)명
+                        <input id="newAfterName" type="text" placeholder="예: 글로벌창업융합전공">
+                      </label>
+                      <label for="newAfterUnitCode">
+                        학과(전공)코드
+                        <input id="newAfterUnitCode" type="text" placeholder="예: HNEW100">
+                      </label>
+                    </div>
+                    <div class="action-buttons">
+                      <button class="ghost-button" id="addAfterNewBtn" type="button">신규 항목 추가</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="selected-list" id="afterSelected"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="preview-box">
+            <div class="preview-title" id="previewSentence">변경 전 또는 변경 후 학과(전공)를 선택하면 저장 문장이 여기에 표시됩니다.</div>
+            <div class="preview-copy" id="previewMeta"></div>
+          </div>
+
+          <div class="feedback">
+            <div class="error-box hidden" id="errorBox"></div>
+            <div class="status-box hidden" id="statusBox"></div>
+          </div>
+
+          <div class="action-row">
+            <div class="action-buttons">
+              <button class="ghost-button" id="resetRelationBtn" type="button">현재 입력 초기화</button>
+              <button class="primary-button" id="saveBtn" type="button">저장</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="surface">
+        <div class="surface-head">
+          <div>
+            <h2 class="surface-title">최근 입력</h2>
+            <div class="surface-copy">방금 저장한 관계를 포함해 최근 입력 내역을 확인합니다.</div>
+          </div>
+        </div>
+        <div class="surface-body">
+          <div class="recent-list" id="recentList"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <div class="modal-backdrop hidden" id="editModalBackdrop"></div>
+  <script>
+    const CHANGE_TYPE_META = {
+      created: { label: '신설', badgeClass: 'is-created' },
+      closed: { label: '폐지', badgeClass: 'is-closed' },
+      merged: { label: '통합', badgeClass: 'is-merged' },
+      splitted: { label: '분리', badgeClass: 'is-splitted' },
+      renewed: { label: '개편', badgeClass: 'is-renewed' },
+      revised: { label: '명칭변경', badgeClass: 'is-revised' },
+      pending: { label: '선택 대기', badgeClass: 'is-pending' },
+      invalid: { label: '저장 불가', badgeClass: 'is-invalid' },
+    };
+
+    const state = {
+      bootstrap: null,
+      units: [],
+      selectableUnits: [],
+      unitsByCode: new Map(),
+      mode: 'create',
+      editingRelationId: null,
+      afterInputMode: 'existing',
+      newAfterCollegeMode: 'existing',
+      newAfterDepartmentMode: 'none',
+      selectedPrev: [],
+      selectedAfter: [],
+      draftAfterNewUnits: [],
+      oneToOneType: 'renewed',
+      isSubmitting: false,
+    };
+
+    const changeYear = document.getElementById('changeYear');
+    const yearSummary = document.getElementById('yearSummary');
+    const typeBadge = document.getElementById('typeBadge');
+    const typeSwitch = document.getElementById('typeSwitch');
+    const summaryMeta = document.getElementById('summaryMeta');
+    const prevHint = document.getElementById('prevHint');
+    const afterHint = document.getElementById('afterHint');
+    const prevInput = document.getElementById('prevInput');
+    const afterInput = document.getElementById('afterInput');
+    const prevAddBtn = document.getElementById('prevAddBtn');
+    const afterAddBtn = document.getElementById('afterAddBtn');
+    const prevMenu = document.getElementById('prevMenu');
+    const afterMenu = document.getElementById('afterMenu');
+    const afterModeSwitch = document.getElementById('afterModeSwitch');
+    const afterExistingBlock = document.getElementById('afterExistingBlock');
+    const afterNewBlock = document.getElementById('afterNewBlock');
+    const afterNewCollegeMode = document.getElementById('afterNewCollegeMode');
+    const afterNewCollegeExistingBlock = document.getElementById('afterNewCollegeExistingBlock');
+    const afterNewCollegeNewBlock = document.getElementById('afterNewCollegeNewBlock');
+    const newAfterCollegeSearch = document.getElementById('newAfterCollegeSearch');
+    const newAfterCollegeMenu = document.getElementById('newAfterCollegeMenu');
+    const newAfterCollegeName = document.getElementById('newAfterCollegeName');
+    const newAfterName = document.getElementById('newAfterName');
+    const afterNewDepartmentMode = document.getElementById('afterNewDepartmentMode');
+    const afterNewDepartmentExistingBlock = document.getElementById('afterNewDepartmentExistingBlock');
+    const afterNewDepartmentNewBlock = document.getElementById('afterNewDepartmentNewBlock');
+    const newAfterCollegeCode = document.getElementById('newAfterCollegeCode');
+    const newAfterDepartmentSearch = document.getElementById('newAfterDepartmentSearch');
+    const newAfterDepartmentMenu = document.getElementById('newAfterDepartmentMenu');
+    const newAfterDepartmentName = document.getElementById('newAfterDepartmentName');
+    const newAfterDepartmentCode = document.getElementById('newAfterDepartmentCode');
+    const newAfterUnitCode = document.getElementById('newAfterUnitCode');
+    const addAfterNewBtn = document.getElementById('addAfterNewBtn');
+    const retainUntil = document.getElementById('retainUntil');
+    const prevSelected = document.getElementById('prevSelected');
+    const afterSelected = document.getElementById('afterSelected');
+    const previewSentence = document.getElementById('previewSentence');
+    const previewMeta = document.getElementById('previewMeta');
+    const errorBox = document.getElementById('errorBox');
+    const statusBox = document.getElementById('statusBox');
+    const resetRelationBtn = document.getElementById('resetRelationBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const recentList = document.getElementById('recentList');
+    const relationEditorSection = document.getElementById('relationEditorSection');
+    const relationEditorTitle = document.getElementById('relationEditorTitle');
+    const editModalBackdrop = document.getElementById('editModalBackdrop');
+    const modeBanner = document.getElementById('modeBanner');
+    const modeBannerTitle = document.getElementById('modeBannerTitle');
+    const modeBannerCopy = document.getElementById('modeBannerCopy');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+
+    changeYear.addEventListener('change', () => {
+      if (state.mode === 'create') {
+        syncSelectionsForChangeYear();
+      }
+      prevInput.value = '';
+      afterInput.value = '';
+      if (state.mode === 'create') {
+        applyDefaultRetainUntil();
+      }
+      renderYearSummary();
+      renderSelected('prev');
+      renderSelected('after');
+      renderPreview();
+      hideSearchMenu('prev');
+      hideSearchMenu('after');
+    });
+    prevAddBtn.addEventListener('click', () => addSelection('prev'));
+    afterAddBtn.addEventListener('click', () => addSelection('after'));
+    addAfterNewBtn.addEventListener('click', addNewAfterUnitDraft);
+    afterModeSwitch.querySelectorAll('[data-after-mode]').forEach(button => {
+      button.addEventListener('click', () => {
+        state.afterInputMode = button.dataset.afterMode;
+        renderAfterInputMode();
+      });
+    });
+    afterNewCollegeMode.querySelectorAll('[data-after-college-mode]').forEach(button => {
+      button.addEventListener('click', () => {
+        state.newAfterCollegeMode = button.dataset.afterCollegeMode;
+        if (state.newAfterCollegeMode === 'new') {
+          newAfterCollegeSearch.value = '';
+        } else {
+          newAfterCollegeName.value = '';
+          newAfterCollegeCode.value = '';
+        }
+        renderNewAfterParentModes();
+      });
+    });
+    afterNewDepartmentMode.querySelectorAll('[data-after-department-mode]').forEach(button => {
+      button.addEventListener('click', () => {
+        state.newAfterDepartmentMode = button.dataset.afterDepartmentMode;
+        if (state.newAfterDepartmentMode !== 'existing') {
+          newAfterDepartmentSearch.value = '';
+        }
+        if (state.newAfterDepartmentMode !== 'new') {
+          newAfterDepartmentName.value = '';
+          newAfterDepartmentCode.value = '';
+        }
+        renderNewAfterParentModes();
+      });
+    });
+    prevInput.addEventListener('keydown', event => {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        showSearchMenu('prev');
+        return;
+      }
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        addSelection('prev');
+      }
+    });
+    afterInput.addEventListener('keydown', event => {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        showSearchMenu('after');
+        return;
+      }
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        addSelection('after');
+      }
+    });
+    prevInput.addEventListener('input', () => showSearchMenu('prev'));
+    afterInput.addEventListener('input', () => showSearchMenu('after'));
+    prevInput.addEventListener('focus', () => showSearchMenu('prev'));
+    afterInput.addEventListener('focus', () => showSearchMenu('after'));
+    newAfterCollegeSearch.addEventListener('input', () => showInlineLookupMenu('college'));
+    newAfterCollegeSearch.addEventListener('focus', () => showInlineLookupMenu('college'));
+    newAfterCollegeSearch.addEventListener('keydown', event => {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        showInlineLookupMenu('college');
+      }
+    });
+    newAfterDepartmentSearch.addEventListener('input', () => showInlineLookupMenu('department'));
+    newAfterDepartmentSearch.addEventListener('focus', () => showInlineLookupMenu('department'));
+    newAfterDepartmentSearch.addEventListener('keydown', event => {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        showInlineLookupMenu('department');
+      }
+    });
+    document.addEventListener('click', event => {
+      if (!event.target.closest('.search-box')) {
+        hideSearchMenu('prev');
+        hideSearchMenu('after');
+        hideInlineLookupMenu('college');
+        hideInlineLookupMenu('department');
+      }
+    });
+    retainUntil.addEventListener('input', renderPreview);
+    resetRelationBtn.addEventListener('click', resetRelationForm);
+    cancelEditBtn.addEventListener('click', cancelEditMode);
+    editModalBackdrop.addEventListener('click', cancelEditMode);
+    saveBtn.addEventListener('click', submitRelation);
+    typeSwitch.querySelectorAll('[data-type-choice]').forEach(button => {
+      button.addEventListener('click', () => {
+        state.oneToOneType = button.dataset.typeChoice;
+        syncTypeChoiceButtons();
+        renderPreview();
+      });
+    });
+    window.addEventListener('load', bootstrap);
+
+    async function bootstrap() {
+      try {
+        const response = await fetch('/api/admin/bootstrap', { cache: 'no-store' });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || '초기 데이터를 불러오지 못했습니다.');
+        }
+
+        state.bootstrap = payload;
+        state.units = payload.units || [];
+        state.unitsByCode = new Map(state.units.map(unit => [unit.unitCode, unit]));
+        state.selectableUnits = buildSelectableUnits();
+
+        fillYearOptions();
+        applyDefaultRetainUntil();
+        renderAll();
+        await applyEditQueryParam();
+      } catch (error) {
+        errorBox.textContent = error.message || '초기 데이터를 불러오지 못했습니다.';
+        errorBox.classList.remove('hidden');
+      }
+    }
+
+    function fillYearOptions() {
+      const years = (state.bootstrap?.years || [])
+        .map(year => Number(year))
+        .filter(Number.isInteger)
+        .sort((a, b) => a - b);
+      const currentYear = new Date().getFullYear();
+      const maxAvailableYear = Math.max(
+        years.length ? years[years.length - 1] : currentYear,
+        currentYear + 1
+      );
+      const firstYear = years.length ? years[0] : currentYear;
+      const availableYears = [];
+
+      for (let year = firstYear; year <= maxAvailableYear; year += 1) {
+        availableYears.push(year);
+      }
+
+      const latestYear = years.length ? years[years.length - 1] : maxAvailableYear;
+      changeYear.innerHTML = availableYears
+        .map(year => `<option value="${escapeHtml(String(year))}">${escapeHtml(String(year))}학년도</option>`)
+        .join('');
+      changeYear.value = String(latestYear);
+    }
+
+    async function applyEditQueryParam() {
+      const params = new URLSearchParams(window.location.search);
+      const rawRelationId = clean(params.get('edit') || params.get('relationId'));
+      if (!rawRelationId) return;
+
+      const relationId = Number(rawRelationId);
+      if (!Number.isInteger(relationId) || relationId <= 0) return;
+
+      await enterEditMode(relationId);
+    }
+
+    function applyDefaultRetainUntil() {
+      const year = Number(clean(changeYear.value));
+      if (!Number.isInteger(year)) {
+        retainUntil.value = '';
+        return;
+      }
+      retainUntil.value = String(year + 3);
+    }
+
+    function renderAll() {
+      renderModeState();
+      renderAfterInputMode();
+      renderYearSummary();
+      renderSelected('prev');
+      renderSelected('after');
+      syncTypeChoiceButtons();
+      renderPreview();
+      renderRecent();
+      hideSearchMenu('prev');
+      hideSearchMenu('after');
+    }
+
+    function renderYearSummary() {
+      const year = clean(changeYear.value);
+      if (!year) {
+        yearSummary.textContent = '변경 학년도를 선택하면 해당 연도의 기존 입력 건수를 함께 보여줍니다.';
+        return;
+      }
+
+      const count = Number(state.bootstrap?.relationCountsByYear?.[year] || 0);
+      const baseCopy = count > 0
+        ? `${year}학년도에는 이미 ${count}건의 변경 관계가 저장되어 있습니다.`
+        : `${year}학년도에는 아직 저장된 변경 관계가 없습니다.`;
+      yearSummary.textContent = state.mode === 'edit' && state.editingRelationId
+        ? `${baseCopy} · 현재 관계 #${state.editingRelationId} 수정 중입니다.`
+        : baseCopy;
+    }
+
+    function renderModeState() {
+      const isEditMode = state.mode === 'edit';
+      document.body.classList.toggle('modal-open', isEditMode);
+      relationEditorSection.classList.toggle('is-edit-modal', isEditMode);
+      editModalBackdrop.classList.toggle('hidden', !isEditMode);
+      modeBanner.classList.toggle('hidden', !isEditMode);
+      relationEditorTitle.textContent = isEditMode ? '변경 관계 수정' : '변경 관계 입력';
+      modeBannerTitle.textContent = isEditMode && state.editingRelationId
+        ? `관계 #${state.editingRelationId} 수정 중`
+        : '수정 모드';
+      modeBannerCopy.textContent = isEditMode
+        ? '불러온 관계를 기준으로 내용을 수정하고 저장하면 같은 관계가 갱신됩니다.'
+        : '';
+      saveBtn.textContent = isEditMode ? '수정 저장' : '저장';
+      resetRelationBtn.textContent = isEditMode ? '수정 취소' : '현재 입력 초기화';
+    }
+
+    function renderAfterInputMode() {
+      const isNewMode = state.afterInputMode === 'new';
+      afterExistingBlock.classList.toggle('hidden', isNewMode);
+      afterNewBlock.classList.toggle('hidden', !isNewMode);
+      afterModeSwitch.querySelectorAll('[data-after-mode]').forEach(button => {
+        button.classList.toggle('is-active', button.dataset.afterMode === state.afterInputMode);
+      });
+      renderNewAfterParentModes();
+    }
+
+    function renderNewAfterParentModes() {
+      const isCollegeNew = state.newAfterCollegeMode === 'new';
+      const departmentMode = state.newAfterDepartmentMode;
+
+      afterNewCollegeExistingBlock.classList.toggle('hidden', isCollegeNew);
+      afterNewCollegeNewBlock.classList.toggle('hidden', !isCollegeNew);
+      afterNewCollegeMode.querySelectorAll('[data-after-college-mode]').forEach(button => {
+        button.classList.toggle('is-active', button.dataset.afterCollegeMode === state.newAfterCollegeMode);
+      });
+
+      afterNewDepartmentExistingBlock.classList.toggle('hidden', departmentMode !== 'existing');
+      afterNewDepartmentNewBlock.classList.toggle('hidden', departmentMode !== 'new');
+      afterNewDepartmentMode.querySelectorAll('[data-after-department-mode]').forEach(button => {
+        button.classList.toggle('is-active', button.dataset.afterDepartmentMode === departmentMode);
+      });
+      hideInlineLookupMenu('college');
+      hideInlineLookupMenu('department');
+    }
+
+    function addSelection(side) {
+      hideFeedback();
+
+      const input = side === 'prev' ? prevInput : afterInput;
+      const value = clean(input.value);
+      if (!value) return;
+
+      const code = resolveUnitCode(value, side);
+      if (!code) {
+        showError('목록에 있는 학과(전공)를 선택해 주세요.');
+        return;
+      }
+
+      const sourceList = side === 'prev' ? state.selectedPrev : state.selectedAfter;
+      const otherList = side === 'prev' ? state.selectedAfter : state.selectedPrev;
+      if (sourceList.some(item => item.unitCode === code)) {
+        showError('이미 추가된 학과(전공)입니다.');
+        return;
+      }
+      if (otherList.some(item => item.unitCode === code)) {
+        showError('같은 학과(전공)를 변경 전과 변경 후에 동시에 넣을 수 없습니다.');
+        return;
+      }
+
+      sourceList.push({
+        unitCode: code,
+        retainUntilGradYear: getDefaultRetainUntilGradYear(),
+      });
+      input.value = '';
+      hideSearchMenu(side);
+      renderSelected(side);
+      renderPreview();
+    }
+
+    function removeSelection(side, code) {
+      if (side === 'prev') {
+        state.selectedPrev = state.selectedPrev.filter(item => item.unitCode !== code);
+      } else {
+        state.selectedAfter = state.selectedAfter.filter(item => item.unitCode !== code);
+      }
+      hideFeedback();
+      renderSelected(side);
+      renderPreview();
+    }
+
+    function renderSelected(side) {
+      const container = side === 'prev' ? prevSelected : afterSelected;
+      const entries = side === 'prev' ? state.selectedPrev : state.selectedAfter;
+      const draftUnits = side === 'after' ? state.draftAfterNewUnits : [];
+
+      if (!entries.length && !draftUnits.length) {
+        container.innerHTML = `<div class="empty">${side === 'prev' ? '아직 추가된 변경 전 학과(전공)가 없습니다.' : '아직 추가된 변경 후 학과(전공)가 없습니다.'}</div>`;
+        return;
+      }
+
+      const existingMarkup = entries.map(entry => {
+        const unit = state.unitsByCode.get(entry.unitCode);
+        if (!unit) return '';
+        return `
+          <div class="selected-item">
+            <div class="selected-top">
+              <div class="selected-name">${escapeHtml(unit.path)}</div>
+              <div class="meta-row">
+                <span class="meta-chip">${escapeHtml(unit.unitTypeLabel)}</span>
+                <span>${escapeHtml(unit.unitCode)}${unit.isTempCode ? ' (임시코드)' : ''}</span>
+                <span>${escapeHtml(getRetainDisplayCopy(entry.retainUntilGradYear))}</span>
+              </div>
+            </div>
+            <div class="selected-actions">
+              <button class="ghost-button" type="button" data-remove-side="${side}" data-remove-code="${escapeHtml(entry.unitCode)}">삭제</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const draftMarkup = draftUnits.map(draft => {
+        const unit = buildDraftUnitDto(draft);
+        return `
+          <div class="selected-item">
+            <div class="selected-top">
+              <div class="selected-name">${escapeHtml(unit.path)}</div>
+              <div class="meta-row">
+                <span class="meta-chip">신규</span>
+                <span>${escapeHtml(unit.unitCode)}</span>
+                <span>${escapeHtml(getRetainDisplayCopy(draft.retainUntilGradYear))}</span>
+              </div>
+            </div>
+            <div class="selected-actions">
+              <button class="ghost-button" type="button" data-remove-draft-code="${escapeHtml(draft.unitCode)}">삭제</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `${existingMarkup}${draftMarkup}`;
+
+      container.querySelectorAll('[data-remove-code]').forEach(button => {
+        button.addEventListener('click', () => removeSelection(button.dataset.removeSide, button.dataset.removeCode));
+      });
+      container.querySelectorAll('[data-remove-draft-code]').forEach(button => {
+        button.addEventListener('click', () => removeDraftAfterUnit(button.dataset.removeDraftCode));
+      });
+    }
+
+    function renderPreview() {
+      const preview = buildPreview();
+      applyTypeBadge(preview.typeInfo);
+      syncTypeChoiceButtons(preview.typeInfo.type);
+      syncInputHints(preview.typeInfo.type);
+
+      previewSentence.textContent = preview.sentence;
+      previewMeta.textContent = preview.meta;
+      summaryMeta.textContent = preview.summary;
+
+      if (preview.errors.length) {
+        errorBox.innerHTML = preview.errors.map(text => `<div>${escapeHtml(text)}</div>`).join('');
+        errorBox.classList.remove('hidden');
+      } else {
+        errorBox.classList.add('hidden');
+        errorBox.textContent = '';
+      }
+
+      if (!state.isSubmitting) {
+        saveBtn.disabled = preview.errors.length > 0;
+      }
+    }
+
+    function buildPreview() {
+      const year = clean(changeYear.value);
+      const prev = state.selectedPrev
+        .map(item => {
+          const unit = state.unitsByCode.get(item.unitCode);
+          return unit ? { ...unit, retainUntilGradYear: item.retainUntilGradYear } : null;
+        })
+        .filter(Boolean);
+      const after = [
+        ...state.selectedAfter
+          .map(item => {
+            const unit = state.unitsByCode.get(item.unitCode);
+            return unit ? { ...unit, retainUntilGradYear: item.retainUntilGradYear } : null;
+          })
+          .filter(Boolean),
+        ...state.draftAfterNewUnits.map(draft => ({
+          ...buildDraftUnitDto(draft),
+          retainUntilGradYear: draft.retainUntilGradYear ?? null,
+        })),
+      ];
+      const errors = [];
+      const typeInfo = inferChangeType(prev.length, after.length);
+      const type = typeInfo.type;
+      const typeLabel = CHANGE_TYPE_META[type]?.label || CHANGE_TYPE_META.pending.label;
+
+      if (!/^\d+$/.test(year)) {
+        errors.push('변경 학년도를 선택해 주세요.');
+      }
+
+      if (typeInfo.invalid) {
+        errors.push('변경 전과 변경 후가 모두 여러 개인 관계는 한 번에 저장할 수 없습니다. 관계를 나누어 입력해 주세요.');
+      }
+
+      if (prev.length === 0 && after.length === 0) {
+        errors.push('변경 전 또는 변경 후 학과(전공)를 먼저 추가해 주세요.');
+      }
+
+      const allRetainValues = [...state.selectedPrev, ...state.selectedAfter, ...state.draftAfterNewUnits]
+        .map(item => item.retainUntilGradYear)
+        .filter(value => value !== null && value !== undefined);
+      if (allRetainValues.some(value => !Number.isInteger(value))) {
+        errors.push('유지 학년도는 숫자로 입력해 주세요.');
+      }
+
+      const sentence = buildSentence(type, prev, after);
+      const retainCopy = getCollectionRetainDisplayCopy([...prev, ...after]);
+      const summary = year ? `${year}학년도 · ${typeLabel}` : `${typeLabel}`;
+      const meta = [summary, retainCopy].filter(Boolean).join(' · ');
+
+      return {
+        typeInfo,
+        sentence,
+        summary,
+        meta,
+        errors,
+      };
+    }
+
+    function getDefaultRetainUntilGradYear() {
+      return normalizeRetainYearValue(retainUntil.value);
+    }
+
+    function normalizeRetainYearValue(value) {
+      const cleaned = clean(value);
+      if (!cleaned) return null;
+      return /^\d+$/.test(cleaned) ? Number(cleaned) : null;
+    }
+
+    function getRetainDisplayCopy(retainUntilGradYear) {
+      return Number.isInteger(retainUntilGradYear)
+        ? `${retainUntilGradYear}학년도 졸업자까지 유지`
+        : '일괄 변경';
+    }
+
+    function getCollectionRetainDisplayCopy(items) {
+      if (!items.length) {
+        return getRetainDisplayCopy(getDefaultRetainUntilGradYear());
+      }
+
+      const values = [...new Set(items.map(item => item.retainUntilGradYear ?? null))];
+      if (values.length === 1) {
+        return getRetainDisplayCopy(values[0]);
+      }
+      return '유지 학년도 개별 설정';
+    }
+
+    function inferChangeType(prevCount, afterCount) {
+      if (prevCount === 0 && afterCount === 0) {
+        return { type: 'pending', invalid: false, needsChoice: false };
+      }
+      if (prevCount > 1 && afterCount > 1) {
+        return { type: 'invalid', invalid: true, needsChoice: false };
+      }
+      if (prevCount === 0 && afterCount > 0) {
+        return { type: 'created', invalid: false, needsChoice: false };
+      }
+      if (prevCount > 0 && afterCount === 0) {
+        return { type: 'closed', invalid: false, needsChoice: false };
+      }
+      if (prevCount > 1 && afterCount === 1) {
+        return { type: 'merged', invalid: false, needsChoice: false };
+      }
+      if (prevCount === 1 && afterCount > 1) {
+        return { type: 'splitted', invalid: false, needsChoice: false };
+      }
+      if (prevCount === 1 && afterCount === 1) {
+        return { type: state.oneToOneType, invalid: false, needsChoice: true };
+      }
+      return { type: 'pending', invalid: false, needsChoice: false };
+    }
+
+    function buildSentence(type, prev, after) {
+      const prevText = prev.map(displayUnit).join(', ');
+      const afterText = after.map(displayUnit).join(', ');
+      const retainValues = [...prev, ...after].map(item => item.retainUntilGradYear ?? null);
+      const uniqueRetainValues = [...new Set(retainValues)];
+      const retentionYear = uniqueRetainValues.length === 1 && Number.isInteger(uniqueRetainValues[0])
+        ? uniqueRetainValues[0]
+        : null;
+
+      if (
+        Number.isInteger(retentionYear) &&
+        prevText &&
+        afterText &&
+        (type === 'renewed' || type === 'revised' || type === 'merged' || type === 'splitted')
+      ) {
+        return `${retentionYear}학년도 졸업자까지는 ${prevText} 유지, ${retentionYear + 1}학년도 졸업자부터는 ${afterText} 소속으로 변경`;
+      }
+
+      switch (type) {
+        case 'created':
+          return afterText ? `${afterText} 신설` : '신설 관계 대기';
+        case 'closed':
+          return prevText ? `${prevText} 폐지` : '폐지 관계 대기';
+        case 'merged':
+          return prevText && afterText ? `${prevText}에서 ${afterText}로 통합` : '통합 관계 대기';
+        case 'splitted':
+          return prevText && afterText ? `${prevText}에서 ${afterText}로 분리` : '분리 관계 대기';
+        case 'revised':
+          return prevText && afterText ? `${prevText}에서 ${afterText}로 명칭변경` : '명칭변경 관계 대기';
+        case 'renewed':
+          return prevText && afterText ? `${prevText}에서 ${afterText}로 개편` : '개편 관계 대기';
+        case 'invalid':
+          return '현재 선택 조합으로는 저장할 수 없습니다.';
+        default:
+          return '변경 전후 학과(전공)를 선택하면 저장 문장이 여기에 표시됩니다.';
+      }
+    }
+
+    function syncInputHints(type) {
+      const prevCount = state.selectedPrev.length;
+      const afterCount = state.selectedAfter.length + state.draftAfterNewUnits.length;
+
+      if (type === 'created') {
+        prevHint.textContent = '신설은 변경 전 없이 저장할 수 있습니다. 필요하면 이전 기준을 추가해 다른 유형으로 전환할 수 있습니다.';
+        afterHint.textContent = '신설되는 학과(전공)를 한 개 이상 추가합니다.';
+      } else if (type === 'closed') {
+        prevHint.textContent = '폐지되는 학과(전공)를 한 개 이상 추가합니다.';
+        afterHint.textContent = '폐지는 변경 후 없이 저장할 수 있습니다. 필요하면 이후 기준을 추가해 다른 유형으로 전환할 수 있습니다.';
+      } else if (type === 'merged') {
+        prevHint.textContent = '통합 전 학과(전공)는 여러 개까지 추가할 수 있습니다.';
+        afterHint.textContent = '통합 후 학과(전공)는 한 개로 맞추는 것이 자연스럽습니다.';
+      } else if (type === 'splitted') {
+        prevHint.textContent = '분리 전 학과(전공)는 한 개로 두는 것이 자연스럽습니다.';
+        afterHint.textContent = '분리 후 학과(전공)는 여러 개까지 추가할 수 있습니다.';
+      } else if (type === 'revised' || type === 'renewed') {
+        prevHint.textContent = '1:1 관계에서는 개편인지 명칭변경인지 상단에서 선택합니다.';
+        afterHint.textContent = '변경 후 기준의 학과(전공)를 선택합니다.';
+      } else if (prevCount > 1 && afterCount > 1) {
+        prevHint.textContent = '현재 조합은 한 번에 저장할 수 없습니다. 관계를 나누어 입력해 주세요.';
+        afterHint.textContent = '현재 조합은 한 번에 저장할 수 없습니다. 관계를 나누어 입력해 주세요.';
+      } else {
+        prevHint.textContent = '개편되기 전 기준의 학과(전공)를 선택합니다.';
+        afterHint.textContent = '개편 이후 기준의 학과(전공)를 선택합니다.';
+      }
+    }
+
+    function applyTypeBadge(typeInfo) {
+      const meta = CHANGE_TYPE_META[typeInfo.type] || CHANGE_TYPE_META.pending;
+      typeBadge.textContent = meta.label;
+      typeBadge.className = `summary-status ${meta.badgeClass}`;
+      typeSwitch.classList.toggle('hidden', !typeInfo.needsChoice);
+    }
+
+    function syncTypeChoiceButtons(activeType = state.oneToOneType) {
+      typeSwitch.querySelectorAll('[data-type-choice]').forEach(button => {
+        button.classList.toggle('is-active', button.dataset.typeChoice === activeType);
+      });
+    }
+
+    function renderRecent() {
+      const items = state.bootstrap?.recentRelations || [];
+      if (!items.length) {
+        recentList.innerHTML = '<div class="empty">최근 입력 내역이 없습니다.</div>';
+        return;
+      }
+
+      recentList.innerHTML = items.map(item => {
+        const prevText = item.prev.map(displayUnit).join(', ') || '없음';
+        const afterText = item.after.map(displayUnit).join(', ') || '없음';
+        const retain = getCollectionRetainDisplayCopy([...item.prev, ...item.after]);
+        const relationSummary = buildRecentRelationSummary(item.changeType, prevText, afterText);
+        return `
+          <div class="recent-item">
+            <div class="recent-top">
+              <div class="recent-summary">
+                <span class="recent-year">${escapeHtml(String(item.changeYear))}학년도</span>
+                <span class="recent-divider">|</span>
+                <span class="recent-relation">${escapeHtml(relationSummary)}</span>
+                <span class="meta-chip">${escapeHtml(item.changeTypeLabel)}</span>
+              </div>
+              <div class="meta-row">
+                <span>${escapeHtml(retain)}</span>
+              </div>
+            </div>
+            <div class="recent-actions">
+              <button
+                class="ghost-button"
+                type="button"
+                data-edit-relation-id="${escapeHtml(String(item.relationId))}"
+                onclick="enterEditMode(${Number(item.relationId)}); return false;"
+              >수정</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function buildRecentRelationSummary(changeType, prevText, afterText) {
+      if (changeType === 'created') {
+        return `(신설) ${afterText}`;
+      }
+      if (changeType === 'closed') {
+        return `(폐지) ${prevText}`;
+      }
+      return `${prevText} → ${afterText}`;
+    }
+
+    async function submitRelation() {
+      const preview = buildPreview();
+      renderPreview();
+      if (preview.errors.length) return;
+
+      setSubmitting(true);
+      hideFeedback();
+
+      try {
+        const payload = {
+          changeYear: Number(clean(changeYear.value)),
+          changeType: preview.typeInfo.type,
+          note: null,
+          prevEndpoints: state.selectedPrev.map(item => ({ ...item })),
+          afterEndpoints: [
+            ...state.selectedAfter.map(item => ({ ...item })),
+            ...state.draftAfterNewUnits.map(unit => ({
+              unitCode: unit.unitCode,
+              retainUntilGradYear: unit.retainUntilGradYear ?? null,
+            })),
+          ],
+          afterNewUnits: state.draftAfterNewUnits.map(unit => ({ ...unit })),
+        };
+
+        const isEditMode = state.mode === 'edit' && state.editingRelationId;
+        const response = await fetch(isEditMode ? `/api/relations/${state.editingRelationId}` : '/api/relations', {
+          method: isEditMode ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          body: JSON.stringify(payload),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || '저장에 실패했습니다.');
+        }
+
+        showStatus(isEditMode
+          ? `관계 #${result.relationId} 수정 저장 완료.`
+          : `관계 #${result.relationId} 저장 완료. ${result.changeYear}학년도에서 계속 입력할 수 있습니다.`);
+        resetRelationForm({ keepStatus: true });
+        await refreshBootstrap();
+      } catch (error) {
+        showError(error.message || '저장에 실패했습니다.');
+      } finally {
+        setSubmitting(false);
+      }
+    }
+
+    async function refreshBootstrap() {
+      const response = await fetch('/api/admin/bootstrap', { cache: 'no-store' });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || '새로고침에 실패했습니다.');
+      }
+      state.bootstrap = payload;
+      state.units = payload.units || [];
+      state.unitsByCode = new Map(state.units.map(unit => [unit.unitCode, unit]));
+      state.selectableUnits = buildSelectableUnits();
+      renderAfterInputMode();
+      renderYearSummary();
+      renderRecent();
+      renderPreview();
+    }
+
+    function resetRelationForm({ keepStatus = false } = {}) {
+      state.mode = 'create';
+      state.editingRelationId = null;
+      state.afterInputMode = 'existing';
+      state.selectedPrev = [];
+      state.selectedAfter = [];
+      state.draftAfterNewUnits = [];
+      state.oneToOneType = 'renewed';
+      prevInput.value = '';
+      afterInput.value = '';
+      resetNewAfterForm();
+      applyDefaultRetainUntil();
+      hideSearchMenu('prev');
+      hideSearchMenu('after');
+      renderModeState();
+      renderAfterInputMode();
+      renderYearSummary();
+      renderSelected('prev');
+      renderSelected('after');
+      syncTypeChoiceButtons();
+      renderPreview();
+      if (!keepStatus) hideFeedback();
+    }
+
+    function cancelEditMode() {
+      resetRelationForm();
+      showStatus('수정 모드를 종료하고 새 입력 상태로 돌아왔습니다.');
+    }
+
+    function applyRelationToForm(relation) {
+      state.mode = 'edit';
+      state.editingRelationId = Number(relation.relationId);
+      state.afterInputMode = 'existing';
+      state.selectedPrev = relation.prev.map(item => ({
+        unitCode: item.unitCode,
+        retainUntilGradYear: item.retainUntilGradYear ?? null,
+      })).filter(item => item.unitCode);
+      state.selectedAfter = relation.after.map(item => ({
+        unitCode: item.unitCode,
+        retainUntilGradYear: item.retainUntilGradYear ?? null,
+      })).filter(item => item.unitCode);
+      state.draftAfterNewUnits = [];
+      state.oneToOneType = relation.changeType === 'revised' ? 'revised' : 'renewed';
+      changeYear.value = String(relation.changeYear);
+      retainUntil.value = relation.retainUntilGradYear === null ? '' : String(relation.retainUntilGradYear);
+      prevInput.value = '';
+      afterInput.value = '';
+      resetNewAfterForm();
+      hideFeedback();
+      hideSearchMenu('prev');
+      hideSearchMenu('after');
+      renderModeState();
+      renderAfterInputMode();
+      renderYearSummary();
+      renderSelected('prev');
+      renderSelected('after');
+      syncTypeChoiceButtons();
+      renderPreview();
+    }
+
+    async function enterEditMode(relationId) {
+      hideFeedback();
+      setSubmitting(true);
+
+      try {
+        const response = await fetch(`/api/relations/${relationId}`, { cache: 'no-store' });
+        const result = await response.json();
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || '수정 대상을 불러오지 못했습니다.');
+        }
+
+        applyRelationToForm(result.relation);
+        showStatus(`관계 #${relationId} 수정 모드로 불러왔습니다.`);
+      } catch (error) {
+        showError(error.message || '수정 대상을 불러오지 못했습니다.');
+      } finally {
+        setSubmitting(false);
+      }
+    }
+
+    window.enterEditMode = enterEditMode;
+
+    function setSubmitting(isSubmitting) {
+      state.isSubmitting = isSubmitting;
+      saveBtn.disabled = isSubmitting;
+      resetRelationBtn.disabled = isSubmitting;
+      prevAddBtn.disabled = isSubmitting;
+      afterAddBtn.disabled = isSubmitting;
+      addAfterNewBtn.disabled = isSubmitting;
+      renderPreview();
+    }
+
+    function resetNewAfterForm() {
+      state.newAfterCollegeMode = 'existing';
+      state.newAfterDepartmentMode = 'none';
+      newAfterCollegeSearch.value = '';
+      newAfterCollegeName.value = '';
+      newAfterCollegeCode.value = '';
+      newAfterDepartmentSearch.value = '';
+      newAfterDepartmentName.value = '';
+      newAfterDepartmentCode.value = '';
+      newAfterName.value = '';
+      newAfterUnitCode.value = '';
+      renderNewAfterParentModes();
+    }
+
+    function buildDraftUnitDto(draft) {
+      const pathNames = [];
+      const collegeName = state.unitsByCode.get(draft.collegeCode)?.unitName || draft.collegeName || draft.collegeCode;
+      const departmentName = draft.departmentCode
+        ? (state.unitsByCode.get(draft.departmentCode)?.unitName || draft.departmentName || draft.departmentCode)
+        : '';
+
+      if (collegeName) pathNames.push(collegeName);
+      if (departmentName) pathNames.push(departmentName);
+      pathNames.push(draft.unitName);
+
+      return {
+        unitCode: draft.unitCode,
+        unitName: draft.unitName,
+        unitType: draft.departmentCode ? 'major' : 'department',
+        unitTypeLabel: '학과(전공)',
+        collegeCode: draft.collegeCode,
+        collegeName: draft.collegeName || '',
+        departmentCode: draft.departmentCode || '',
+        departmentName: draft.departmentName || '',
+        majorCode: draft.departmentCode ? draft.unitCode : '',
+        pathCodes: [draft.collegeCode, draft.departmentCode, draft.unitCode].filter(Boolean),
+        path: pathNames.join(' > '),
+        isTempCode: false,
+      };
+    }
+
+    function describeExistingUnitByCode(code) {
+      const unit = state.unitsByCode.get(code);
+      if (!unit) return code;
+      return `${buildUnitOptionPath(unit)} (${unit.unitCode})`;
+    }
+
+    function removeDraftAfterUnit(code) {
+      state.draftAfterNewUnits = state.draftAfterNewUnits.filter(unit => unit.unitCode !== code);
+      hideFeedback();
+      renderSelected('after');
+      renderPreview();
+    }
+
+    function addNewAfterUnitDraft() {
+      hideFeedback();
+
+      const unitName = clean(newAfterName.value);
+      const unitCode = clean(newAfterUnitCode.value).toUpperCase();
+      const collegeMode = state.newAfterCollegeMode;
+      const departmentMode = state.newAfterDepartmentMode;
+
+      const collegeCode = collegeMode === 'existing'
+        ? resolveInlineLookupCode('college', newAfterCollegeSearch.value)
+        : clean(newAfterCollegeCode.value).toUpperCase();
+      const collegeName = collegeMode === 'new'
+        ? clean(newAfterCollegeName.value)
+        : '';
+
+      const departmentCode = departmentMode === 'existing'
+        ? resolveInlineLookupCode('department', newAfterDepartmentSearch.value)
+        : departmentMode === 'new'
+          ? clean(newAfterDepartmentCode.value).toUpperCase()
+          : '';
+      const departmentName = departmentMode === 'new'
+        ? clean(newAfterDepartmentName.value)
+        : '';
+
+      if (!unitName) {
+        showError('신규 학과(전공)명을 입력해 주세요.');
+        return;
+      }
+      if (!collegeCode) {
+        showError(collegeMode === 'existing' ? '기존 단과대학을 선택해 주세요.' : '단과대학명과 단과대학코드를 입력해 주세요.');
+        return;
+      }
+      if (!unitCode) {
+        showError('신규 학과(전공) 코드를 입력해 주세요.');
+        return;
+      }
+      if (collegeMode === 'new' && !collegeName) {
+        showError('신규 단과대학명과 단과대학코드를 함께 입력해 주세요.');
+        return;
+      }
+      if (departmentMode === 'existing' && !departmentCode) {
+        showError('기존 학부를 선택해 주세요.');
+        return;
+      }
+      if (departmentMode === 'new' && (!departmentName || !departmentCode)) {
+        showError('신규 학부명과 학부코드를 함께 입력해 주세요.');
+        return;
+      }
+
+      const college = state.unitsByCode.get(collegeCode);
+      if (collegeMode === 'existing') {
+        if (!college || college.unitType !== 'college') {
+          showError('단과대학 선택값을 다시 확인해 주세요.');
+          return;
+        }
+      } else if (state.unitsByCode.has(collegeCode)) {
+        showError(`이미 등록된 단과대학코드입니다: ${describeExistingUnitByCode(collegeCode)}. 기존 선택으로 골라 주세요.`);
+        return;
+      }
+
+      if (departmentMode === 'existing') {
+        const department = state.unitsByCode.get(departmentCode);
+        if (!department || department.unitType !== 'department') {
+          showError('학부 선택값을 다시 확인해 주세요.');
+          return;
+        }
+        if (department.collegeCode !== collegeCode) {
+          showError('선택한 학부가 단과대학 소속과 맞지 않습니다.');
+          return;
+        }
+      } else if (departmentMode === 'new' && state.unitsByCode.has(departmentCode)) {
+        showError(`이미 등록된 학부코드입니다: ${describeExistingUnitByCode(departmentCode)}. 기존 선택으로 골라 주세요.`);
+        return;
+      }
+
+      if (
+        [collegeCode, departmentCode].filter(Boolean).includes(unitCode) ||
+        (departmentCode && departmentCode === collegeCode)
+      ) {
+        showError('상위 조직 코드와 학과(전공) 코드는 서로 달라야 합니다.');
+        return;
+      }
+
+      if (state.unitsByCode.has(unitCode)) {
+        showError(`이미 등록된 학과(전공) 코드입니다: ${describeExistingUnitByCode(unitCode)}.`);
+        return;
+      }
+      if (
+        state.selectedPrev.some(item => item.unitCode === unitCode) ||
+        state.selectedAfter.some(item => item.unitCode === unitCode)
+      ) {
+        showError('이미 현재 변경 관계에 포함된 코드입니다.');
+        return;
+      }
+      if (state.draftAfterNewUnits.some(unit => unit.unitCode === unitCode)) {
+        showError('이미 추가한 신규 학과(전공) 코드입니다.');
+        return;
+      }
+
+      state.draftAfterNewUnits.push({
+        unitName,
+        collegeCode,
+        collegeName,
+        departmentCode,
+        departmentName,
+        unitCode,
+        retainUntilGradYear: getDefaultRetainUntilGradYear(),
+      });
+
+      resetNewAfterForm();
+      renderSelected('after');
+      renderPreview();
+      showStatus('신규 변경 후 학과(전공)을 저장 대기 목록에 추가했습니다.');
+    }
+
+    function resolveUnitCode(value, side) {
+      const cleaned = value.toLowerCase();
+      const selectableUnits = getSelectableUnitsForSide(side);
+      const byCode = selectableUnits.find(unit => unit.unitCode.toLowerCase() === cleaned);
+      if (byCode) return byCode.unitCode;
+
+      const exactLabelMatch = selectableUnits.find(unit => buildUnitOptionLabel(unit) === value);
+      if (exactLabelMatch) return exactLabelMatch.unitCode;
+
+      const exactNameMatches = selectableUnits.filter(unit => unit.unitName === value);
+      if (exactNameMatches.length === 1) return exactNameMatches[0].unitCode;
+
+      return '';
+    }
+
+    function resolveInlineLookupCode(kind, value) {
+      const cleaned = clean(value).toLowerCase();
+      const lookupUnits = getInlineLookupUnits(kind);
+      const byCode = lookupUnits.find(unit => unit.unitCode.toLowerCase() === cleaned);
+      if (byCode) return byCode.unitCode;
+
+      const exactLabelMatch = lookupUnits.find(unit => buildInlineLookupLabel(unit, kind) === value);
+      if (exactLabelMatch) return exactLabelMatch.unitCode;
+
+      const exactNameMatches = lookupUnits.filter(unit => unit.unitName === value);
+      if (exactNameMatches.length === 1) return exactNameMatches[0].unitCode;
+
+      return '';
+    }
+
+    function getInlineLookupUnits(kind) {
+      if (kind === 'college') {
+        return state.units.filter(unit => unit.unitType === 'college');
+      }
+
+      const activeCollegeCode = state.newAfterCollegeMode === 'existing'
+        ? resolveInlineLookupCode('college', newAfterCollegeSearch.value)
+        : clean(newAfterCollegeCode.value).toUpperCase();
+
+      return state.units.filter(unit => (
+        unit.unitType === 'department' &&
+        (!activeCollegeCode || unit.collegeCode === activeCollegeCode)
+      ));
+    }
+
+    function buildInlineLookupLabel(unit, kind) {
+      if (kind === 'college') {
+        return `${unit.unitName} | ${unit.unitCode}`;
+      }
+      return `${buildUnitOptionPath(unit)} | ${unit.unitCode}`;
+    }
+
+    function showInlineLookupMenu(kind) {
+      const input = kind === 'college' ? newAfterCollegeSearch : newAfterDepartmentSearch;
+      const menu = kind === 'college' ? newAfterCollegeMenu : newAfterDepartmentMenu;
+      const query = clean(input.value).toLowerCase();
+      const matches = getInlineLookupUnits(kind)
+        .filter(unit => {
+          const label = buildInlineLookupLabel(unit, kind).toLowerCase();
+          return !query || label.includes(query) || unit.unitName.toLowerCase().includes(query);
+        })
+        .slice(0, 20);
+
+      if (!matches.length) {
+        menu.innerHTML = '<div class="empty">검색 결과가 없습니다.</div>';
+        menu.classList.remove('hidden');
+        return;
+      }
+
+      menu.innerHTML = matches.map(unit => `
+        <button class="search-option" type="button" data-inline-kind="${kind}" data-code="${escapeHtml(unit.unitCode)}">
+          <span class="search-option-title">${escapeHtml(kind === 'college' ? unit.unitName : buildUnitOptionPath(unit))}</span>
+          <span class="search-option-meta">${escapeHtml(unit.unitCode)}</span>
+        </button>
+      `).join('');
+      menu.classList.remove('hidden');
+      menu.querySelectorAll('[data-inline-kind]').forEach(button => {
+        button.addEventListener('mousedown', event => {
+          event.preventDefault();
+          const unit = state.unitsByCode.get(button.dataset.code);
+          if (!unit) return;
+          input.value = buildInlineLookupLabel(unit, kind);
+          hideInlineLookupMenu(kind);
+        });
+      });
+    }
+
+    function hideInlineLookupMenu(kind) {
+      const menu = kind === 'college' ? newAfterCollegeMenu : newAfterDepartmentMenu;
+      menu.classList.add('hidden');
+      menu.innerHTML = '';
+    }
+
+    function buildSelectableUnits() {
+      const parentCodes = new Set(
+        state.units
+          .map(unit => clean(unit.parentUnitCode))
+          .filter(Boolean)
+      );
+
+      return state.units.filter(unit => (
+        unit.unitType !== 'college' &&
+        !parentCodes.has(unit.unitCode)
+      ));
+    }
+
+    function getActiveUnitCodesForYear(year) {
+      if (!Number.isInteger(year)) return null;
+      const codes = state.bootstrap?.activeUnitCodesByYear?.[String(year)];
+      return Array.isArray(codes) ? new Set(codes) : null;
+    }
+
+    function getSelectableUnitsForSide(side) {
+      const changeYearValue = Number(clean(changeYear.value));
+      const activeYear = side === 'prev' ? changeYearValue - 1 : changeYearValue;
+      const activeCodes = getActiveUnitCodesForYear(activeYear);
+
+      if (!activeCodes) {
+        return [...state.selectableUnits];
+      }
+
+      return state.selectableUnits.filter(unit => activeCodes.has(unit.unitCode));
+    }
+
+    function syncSelectionsForChangeYear() {
+      const prevAllowed = new Set(getSelectableUnitsForSide('prev').map(unit => unit.unitCode));
+      const afterAllowed = new Set(getSelectableUnitsForSide('after').map(unit => unit.unitCode));
+
+      state.selectedPrev = state.selectedPrev.filter(item => prevAllowed.has(item.unitCode));
+      state.selectedAfter = state.selectedAfter.filter(item => afterAllowed.has(item.unitCode));
+    }
+
+    function showSearchMenu(side) {
+      const input = side === 'prev' ? prevInput : afterInput;
+      const menu = side === 'prev' ? prevMenu : afterMenu;
+      const selectedCodes = new Set((side === 'prev' ? state.selectedPrev : state.selectedAfter).map(item => item.unitCode));
+      const otherCodes = new Set((side === 'prev' ? state.selectedAfter : state.selectedPrev).map(item => item.unitCode));
+      const query = clean(input.value).toLowerCase();
+      const maxResults = side === 'prev' ? 100 : 12;
+      const matches = getSelectableUnitsForSide(side)
+        .filter(unit => !selectedCodes.has(unit.unitCode))
+        .filter(unit => {
+          const label = buildUnitOptionLabel(unit).toLowerCase();
+          return !query || label.includes(query) || unit.unitName.toLowerCase().includes(query);
+        })
+        .slice(0, maxResults);
+
+      if (!matches.length) {
+        menu.innerHTML = '<div class="empty">검색 결과가 없습니다.</div>';
+        menu.classList.remove('hidden');
+        return;
+      }
+
+      menu.innerHTML = matches.map(unit => {
+        const otherMark = otherCodes.has(unit.unitCode) ? ' · 반대쪽에 이미 선택됨' : '';
+        return `
+          <button class="search-option" type="button" data-side="${side}" data-code="${escapeHtml(unit.unitCode)}">
+            <span class="search-option-title">${escapeHtml(buildUnitOptionPath(unit))}</span>
+            <span class="search-option-meta">${escapeHtml(unit.unitCode)}${escapeHtml(otherMark)}</span>
+          </button>
+        `;
+      }).join('');
+      menu.classList.remove('hidden');
+      menu.querySelectorAll('[data-code]').forEach(button => {
+        button.addEventListener('mousedown', event => {
+          event.preventDefault();
+          const unit = state.unitsByCode.get(button.dataset.code);
+          if (!unit) return;
+          input.value = buildUnitOptionLabel(unit);
+          hideSearchMenu(side);
+        });
+      });
+    }
+
+    function hideSearchMenu(side) {
+      const menu = side === 'prev' ? prevMenu : afterMenu;
+      menu.classList.add('hidden');
+      menu.innerHTML = '';
+    }
+
+    function buildUnitOptionLabel(unit) {
+      const visiblePath = buildUnitOptionPath(unit);
+      return `${visiblePath} | ${unit.unitCode}`;
+    }
+
+    function buildUnitOptionPath(unit) {
+      const collegeName = state.unitsByCode.get(unit.collegeCode)?.unitName || '';
+      const departmentName = state.unitsByCode.get(unit.departmentCode)?.unitName || '';
+      const leafName = unit.unitName || '';
+      let compactPath = '';
+
+      if (unit.unitType === 'major' && departmentName && departmentName !== leafName) {
+        compactPath = [collegeName, `${departmentName}(${leafName})`].filter(Boolean).join(' > ');
+      } else if (unit.unitType === 'major') {
+        compactPath = [collegeName, leafName].filter(Boolean).join(' > ');
+      } else {
+        compactPath = [collegeName, leafName].filter(Boolean).join(' > ');
+      }
+
+      return compactPath || unit.path || leafName;
+    }
+
+    function displayUnit(unit) {
+      if (!unit) return '';
+      if (unit.unitType === 'major' && unit.departmentCode) {
+        const dept = state.unitsByCode.get(unit.departmentCode);
+        return dept ? `${dept.unitName}(${unit.unitName})` : unit.unitName;
+      }
+      return unit.unitName;
+    }
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.classList.remove('hidden');
+      statusBox.classList.add('hidden');
+      statusBox.textContent = '';
+    }
+
+    function showStatus(message) {
+      statusBox.textContent = message;
+      statusBox.classList.remove('hidden');
+      errorBox.classList.add('hidden');
+      errorBox.textContent = '';
+    }
+
+    function hideFeedback() {
+      errorBox.classList.add('hidden');
+      errorBox.textContent = '';
+      statusBox.classList.add('hidden');
+      statusBox.textContent = '';
+    }
+
+    function clean(value) {
+      return String(value ?? '').trim();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      }[char]));
+    }
+  </script>
+</body>
+</html>
