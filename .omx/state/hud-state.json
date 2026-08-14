@@ -1,6 +1,0 @@
-{
-  "last_turn_at": "2026-08-13T15:38:31.346Z",
-  "turn_count": 140,
-  "last_progress_at": "2026-08-13T15:38:31.346Z",
-  "last_agent_output": "이제 접속 정보는 이렇게 돼요.\n\n- 아이디: `admin`\n- 비밀번호: `admin1234`\n\n확인 결과:\n- `3004` 서버 정상 실행 중\n- 위 계정으로 `/admin.h"
-}

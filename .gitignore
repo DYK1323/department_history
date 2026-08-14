@@ -1,1 +1,21 @@
+# Local environment
 .env
+.env.*
+!.env.example
+
+# Runtime and local agent state
+.omx/logs/
+.omx/state/
+.omx/metrics.json
+
+# Local tools and downloaded binaries
+tools/
+
+# Dependency and cache folders
+node_modules/
+__pycache__/
+*.py[cod]
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
